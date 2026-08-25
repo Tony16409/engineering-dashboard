@@ -1,9 +1,21 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
+import os
 
 # --- إعدادات الصفحة ---
 st.set_page_config(page_title="منصة إدارة المشاريع الهندسية", page_icon="🏗️", layout="wide")
+
+# --- إنشاء مجلد حفظ الملفات وقاعدة البيانات لو مش موجودين ---
+UPLOAD_DIR = "uploaded_files"
+DB_FILE = "files_db.csv"
+
+if not os.path.exists(UPLOAD_DIR):
+    os.makedirs(UPLOAD_DIR)
+
+if not os.path.exists(DB_FILE):
+    df_init = pd.DataFrame(columns=["name", "type", "size", "note", "date", "path"])
+    df_init.to_csv(DB_FILE, index=False)
 
 # --- كود CSS لتنسيق واجهة الدخول والخلفية ---
 st.markdown("""
@@ -67,10 +79,6 @@ if st.sidebar.button("🔒 تسجيل الخروج"):
     st.session_state["authenticated"] = False
     st.rerun()
 
-# --- تهيئة قائمة الملفات في الذاكرة ---
-if "files_list" not in st.session_state:
-    st.session_state["files_list"] = []
-
 # --- قسم رفع الملفات ---
 st.subheader("📤 رفع مستند أو مخطط جديد")
 col1, col2 = st.columns([3, 2])
@@ -83,32 +91,43 @@ with col2:
 
 if st.button("💾 حفظ ورفع الملف", type="primary"):
     if uploaded_file is not None:
-        file_bytes = uploaded_file.read()
-        file_size_kb = len(file_bytes) / 1024
+        # حفظ الملف في مجلد السيرفر دائمًا
+        file_path = os.path.join(UPLOAD_DIR, uploaded_file.name)
+        with open(file_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+            
+        file_size_kb = uploaded_file.size / 1024
         file_size_str = f"{file_size_kb / 1024:.1f} MB" if file_size_kb > 1024 else f"{file_size_kb:.1f} KB"
         file_ext = uploaded_file.name.split('.')[-1].upper()
-        
-        new_file_data = {
+        # قراءة قاعدة البيانات القديمة وإضافة الملف الجديد في البداية
+        df = pd.read_csv(DB_FILE)
+        new_row = pd.DataFrame([{
             "name": uploaded_file.name,
             "type": file_ext,
             "size": file_size_str,
             "note": note if note else "بدون ملاحظات",
             "date": datetime.now().strftime("%Y-%m-%d"),
-            "data": file_bytes
-        }
-        st.session_state["files_list"].insert(0, new_file_data)
-        st.success(f"✅ تم رفع الملف بنجاح وإضافته للجدول: {uploaded_file.name}")
+            "path": file_path
+        }])
+        
+        df = pd.concat([new_row, df], ignore_index=True)
+        df.to_csv(DB_FILE, index=False)
+        
+        st.success(f"✅ تم حفظ الملف بشكل دائم ورفعه بنجاح: {uploaded_file.name}")
+        st.rerun()
     else:
         st.warning("⚠️ يرجى اختيار ملف أولاً.")
 
 st.markdown("---")
 
-# --- سجل الملفات والمقاييس والمرقمة ---
-st.subheader("📋 سجل الملفات والمقاييس المرفوعة والمرقمة")
-if not st.session_state["files_list"]:
+# --- سجل الملفات والمقاييس الدائم ---
+st.subheader("📋 سجل الملفات والمقاييس المرفوعة والمرقمة (حفظ دائم)")
+
+df_files = pd.read_csv(DB_FILE)
+
+if df_files.empty:
     st.info("ℹ️ لم يتم رفع أي ملفات حتى الآن. قم برفع ملف أعلاه.")
 else:
-    # رأس الجدول الاحترافي (تم تقليل عدد الأعمدة لتركيز المساحة على الأزرار)
     header_cols = st.columns([0.6, 2.8, 1.0, 1.2, 2.2, 1.8])
     header_cols[0].markdown("م")
     header_cols[1].markdown("اسم الملف")
@@ -118,25 +137,27 @@ else:
     header_cols[5].markdown("📥 فتح وتنزيل فوري")
     st.markdown("---")
 
-    # عرض الصفوف مرقمة
-    for idx, file_info in enumerate(st.session_state["files_list"]):
+    for idx, row in df_files.iterrows():
         row_cols = st.columns([0.6, 2.8, 1.0, 1.2, 2.2, 1.8])
         
         row_cols[0].markdown(f"{idx + 1}")
-        row_cols[1].markdown(f"{file_info['name']}")
-        row_cols[2].markdown(f"{file_info['type']}")
-        row_cols[3].markdown(f"{file_info['size']}")
-        row_cols[4].markdown(f"{file_info['note']}")
+        row_cols[1].markdown(f"{row['name']}")
+        row_cols[2].markdown(f"{row['type']}")
+        row_cols[3].markdown(f"{row['size']}")
+        row_cols[4].markdown(f"{row['note']}")
         
-        # زرار التنزيل والفتح الفوري المضمون 100%
         with row_cols[5]:
-            st.download_button(
-                label="🚀 فتح وتنزيل",
-                data=file_info["data"],
-                file_name=file_info["name"],
-                key=f"download_btn_{idx}",
-                use_container_width=True
-            )
+            if os.path.exists(row['path']):
+                with open(row['path'], "rb") as file_to_download:
+                    st.download_button(
+                        label="🚀 فتح وتنزيل",
+                        data=file_to_download,
+                        file_name=row['name'],
+                        key=f"download_btn_{idx}",
+                        use_container_width=True
+                    )
+            else:
+                st.error("⚠️ الملف غير موجود على السيرفر")
             
         st.markdown("---")
 
