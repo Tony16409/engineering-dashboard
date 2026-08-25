@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import os
+import base64
 
 # --- إعدادات الصفحة ---
 st.set_page_config(page_title="منصة إدارة المشاريع الهندسية", page_icon="🏗️", layout="wide")
@@ -127,18 +128,19 @@ df_files = pd.read_csv(DB_FILE)
 if df_files.empty:
     st.info("ℹ️ لم يتم رفع أي ملفات حتى الآن. قم برفع ملف أعلاه.")
 else:
-    header_cols = st.columns([0.5, 2.6, 0.9, 1.0, 2.0, 1.2, 1.2])
+    header_cols = st.columns([0.4, 2.3, 0.8, 0.9, 1.8, 1.1, 1.1, 1.1])
     header_cols[0].markdown("م")
     header_cols[1].markdown("اسم الملف")
     header_cols[2].markdown("النوع")
     header_cols[3].markdown("الحجم")
     header_cols[4].markdown("الملاحظات")
-    header_cols[5].markdown("🌐 فتح في تبويب")
+    header_cols[5].markdown("🌐 فتح")
     header_cols[6].markdown("💾 تحميل")
+    header_cols[7].markdown("🗑️ حذف")
     st.markdown("---")
 
     for idx, row in df_files.iterrows():
-        row_cols = st.columns([0.5, 2.6, 0.9, 1.0, 2.0, 1.2, 1.2])
+        row_cols = st.columns([0.4, 2.3, 0.8, 0.9, 1.8, 1.1, 1.1, 1.1])
         
         row_cols[0].markdown(f"{idx + 1}")
         row_cols[1].markdown(f"{row['name']}")
@@ -146,41 +148,38 @@ else:
         row_cols[3].markdown(f"{row['size']}")
         row_cols[4].markdown(f"{row['note']}")
         
-        # زرار "فتح" كـ رابط HTML مباشر يفتح في تبويب جديد بدون قيود
+        # 1. زرار الفتح
         with row_cols[5]:
-            if os.path.exists(row['path']):
-                # قراءة الملف وعرضه كزرار ويب يفتح في تاب جديد باستخدام الـ Data URI المباشر للرابط
+            if os.path.exists(str(row['path'])):
                 with open(row['path'], "rb") as f:
                     file_bytes = f.read()
-                import base64
                 b64_data = base64.b64encode(file_bytes).decode('utf-8')
                 mime_type = "application/pdf" if row['type'] == "PDF" else "application/octet-stream"
                 
-                # رابط HTML مباشر يفتح في تاب جديد مع منع الحظر
                 open_link = f'''
                 <a href="data:{mime_type};base64,{b64_data}" target="_blank" style="
                     display: inline-block;
                     background-color: #ff4b4b;
                     color: white;
-                    padding: 6px 12px;
+                    padding: 5px 8px;
                     border-radius: 4px;
                     text-decoration: none;
                     text-align: center;
-                    font-size: 14px;
+                    font-size: 13px;
                     font-weight: 500;
                     width: 100%;
-                ">🌐 فتح</a>
+                ">فتح</a>
                 '''
                 st.markdown(open_link, unsafe_allow_html=True)
             else:
                 st.error("مفقود")
 
-        # زرار "تحميل" في خانة مستقلة
+        # 2. زرار التحميل
         with row_cols[6]:
-            if os.path.exists(row['path']):
+            if os.path.exists(str(row['path'])):
                 with open(row['path'], "rb") as file_to_download:
                     st.download_button(
-                        label="📥 تحميل",
+                        label="تحميل",
                         data=file_to_download,
                         file_name=row['name'],
                         key=f"download_btn_{idx}",
@@ -188,6 +187,20 @@ else:
                     )
             else:
                 st.error("مفقود")
+
+        # 3. زرار الحذف
+        with row_cols[7]:
+            if st.button("🗑️ حذف", key=f"delete_btn_{idx}", use_container_width=True):
+                if os.path.exists(str(row['path'])):
+                    try:
+                        os.remove(row['path'])
+                    except Exception:
+                        pass
+                
+                df_files = df_files.drop(idx)
+                df_files.to_csv(DB_FILE, index=False)
+                st.success(f"تم حذف الملف {row['name']} بنجاح!")
+                st.rerun()
             
         st.markdown("---")
 
