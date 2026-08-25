@@ -39,7 +39,7 @@ st.markdown("""
 }
 .brand-text {
     color: #ffffff;
-    font-size: 22px;
+    font-size: 72px;
     font-weight: 800;
     letter-spacing: 3px;
     margin: 0;
