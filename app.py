@@ -103,42 +103,11 @@ if st.button("💾 حفظ ورفع الملف", type="primary"):
         st.warning("⚠️ يرجى اختيار ملف أولاً.")
 
 st.markdown("---")
-# --- سجل الملفات والمقاييس (جدول مرتب بأعمدة مستقلة لـ "فتح" و "تحميل") ---
-st.subheader("📋 سجل الملفات والمقاييس المرفوعة والمرقمة")
-
-if not st.session_state["files_list"]:
-    st.info("ℹ️ لم يتم رفع أي ملفات حتى الآن. قم برفع ملف أعلاه.")
-else:
-    # رأس الجدول الاحترافي
-    header_cols = st.columns([0.6, 2.5, 0.9, 1.1, 1.8, 1.2, 1.2])
-    header_cols[0].markdown("م")
-    header_cols[1].markdown("اسم الملف")
-    header_cols[2].markdown("النوع")
-    header_cols[3].markdown("الحجم")
-    header_cols[4].markdown("الملاحظات")
-    header_cols[5].markdown("👁️ فتح الملف")
-    header_cols[6].markdown("💾 تحميل")
-    st.markdown("---")
-
-    # عرض الصفوف مرقمة
-    for idx, file_info in enumerate(st.session_state["files_list"]):
-        row_cols = st.columns([0.6, 2.5, 0.9, 1.1, 1.8, 1.2, 1.2])
-        
-        # الترقيم
-        row_cols[0].markdown(f"{idx + 1}")
-        row_cols[1].markdown(f"{file_info['name']}")
-        row_cols[2].markdown(f"{file_info['type']}")
-        row_cols[3].markdown(f"{file_info['size']}")
-        row_cols[4].markdown(f"{file_info['note']}")
-        
-        # زرار الفتح في خانة لوحده
+# زرار الفتح والمعاينة مباشرة جوه المنصة
         with row_cols[5]:
-            b64 = base64.b64encode(file_info["data"]).decode('utf-8')
-            file_extension = file_info['name'].split('.')[-1].lower()
-            mime_type = "application/pdf" if file_extension == "pdf" else "application/octet-stream"
-            href = f'<a href="data:{mime_type};base64,{b64}" target="_blank" style="padding:6px 12px; background-color:#2e7d32; color:white; border-radius:5px; text-decoration:none; font-size:14px;">👁️ فتح</a>'
-            st.markdown(href, unsafe_allow_html=True)
-            
+            if st.button("👁️ فتح بالمنصة", key=f"view_btn_{idx}"):
+                st.session_state["active_view"] = idx
+                
         # زرار التحميل في خانة لوحده جنبه
         with row_cols[6]:
             st.download_button(
@@ -150,4 +119,33 @@ else:
             
         st.markdown("---")
 
-st.markdown('<p style="text-align: center; color: #777;">منصة إدارة المشاريع الهندسية - تصميم وتنفيذ أنطونيوس © 2026</p>', unsafe_allow_html=True)
+# --- معاينة الملف المختار جوه المنصة مباشرة ---
+if "active_view" in st.session_state:
+    idx = st.session_state["active_view"]
+    if idx < len(st.session_state["files_list"]):
+        selected_file = st.session_state["files_list"][idx]
+        st.markdown(f"### 🔍 معاينة الملف: {selected_file['name']}")
+        
+        file_ext = selected_file['name'].split('.')[-1].lower()
+        
+        # لو الملف PDF نعرضه مباشرة جوه المنصة بشاشة واضحة
+        if file_ext == 'pdf':
+            base64_pdf = base64.b64encode(selected_file["data"]).decode('utf-8')
+            pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="600px" type="application/pdf"></iframe>'
+            st.markdown(pdf_display, unsafe_allow_html=True)
+            
+        # لو صورة نعرضها مباشرة
+        elif file_ext in ['png', 'jpg', 'jpeg']:
+            st.image(selected_file["data"], caption=selected_file['name'], use_column_width=True)
+            
+        # لو ملف نصي أو كود نعرضه
+        elif file_ext in ['txt', 'csv']:
+            text_content = selected_file["data"].decode('utf-8')
+            st.text_area("محتوى الملف:", text_content, height=300)
+            
+        else:
+            st.info(f"📁 نوع الملف ({file_ext}) جاهز للتحميل المباشر.")
+            
+        if st.button("❌ إغلاق المعاينة"):
+            del st.session_state["active_view"]
+            st.rerun()
