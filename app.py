@@ -25,23 +25,23 @@ st.markdown("""
     background-color: #f4f6f9;
 }
 .login-card {
-    background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("https://images.unsplash.com/photo-1581094264568-6190d67d0736?q=80&w=1920&auto=format&fit=crop");
+    /* حط هنا رابط الصورة المباشر أو اسم الصورة لو رفعتها في نفس المجلد */
+    background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url("رابط_الصورة_هنا");
     background-size: cover;
     background-position: center;
     padding: 40px;
     border-radius: 20px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
     max-width: 450px;
     margin: 12vh auto;
     text-align: center;
     color: white;
 }
-.login-card h2, .login-card p {
+.login-card h2, .login-card p, .login-card label {
     color: white !important;
 }
 </style>
 """, unsafe_allow_html=True)
-
 # --- إدارة حالة تسجيل الدخول ---
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
