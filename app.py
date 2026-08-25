@@ -18,27 +18,11 @@ if not os.path.exists(DB_FILE):
     df_init = pd.DataFrame(columns=["name", "type", "size", "note", "date", "path"])
     df_init.to_csv(DB_FILE, index=False)
 
-# --- كود CSS لتنسيق الواجهة وخلفية هندسية احترافية مع تخصيص مستطيل العنوان العلوي ---
+# --- كود CSS لتنسيق الواجهة وخلفية هندسية احترافية ---
 st.markdown("""
 <style>
 [data-testid="stAppViewContainer"] {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
-}
-.login-card {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 40px;
-    border-radius: 20px;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
-    max-width: 450px;
-    margin: 5vh auto;
-    text-align: center;
-    color: white;
-}
-.login-card h2, .login-card p, .login-card label {
-    color: white !important;
 }
 /* تنسيق المستطيل العلوي لكلمة Al-Farida Group */
 .brand-box {
@@ -46,20 +30,28 @@ st.markdown("""
     border: 1px solid rgba(255, 255, 255, 0.15);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    padding: 12px 25px;
-    border-radius: 12px;
+    padding: 16px 25px;
+    border-radius: 15px;
     max-width: 450px;
-    margin: 20px auto 10px auto;
+    margin: 30px auto 20px auto;
     text-align: center;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
 }
 .brand-text {
     color: #ffffff;
-    font-size: 22px;
+    font-size: 24px;
     font-weight: 700;
-    letter-spacing: 1.5px;
+    letter-spacing: 2px;
     margin: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+.login-container {
+    max-width: 450px;
+    margin: 0 auto;
+    color: white;
+}
+.login-container label {
+    color: white !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -72,12 +64,12 @@ if "authenticated" not in st.session_state:
 if not st.session_state["authenticated"]:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        # طباعة اسم المجموعة داخل المستطيل العلوي بتصميم فخم
+        # مستطيل العنوان العلوي
         st.markdown('<div class="brand-box"><p class="brand-text">Al-Farida Group</p></div>', unsafe_allow_html=True)
         
-        st.markdown('<div class="login-card">', unsafe_allow_html=True)
-        st.markdown("<h2>🏗️ تسجيل الدخول</h2>", unsafe_allow_html=True)
-        st.markdown("<p style='color: #94a3b8;'>منصة إدارة المشاريع الهندسية</p>", unsafe_allow_html=True)
+        st.markdown('<div class="login-container">', unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; color: white;'>🏗️ تسجيل الدخول</h2>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center; color: #94a3b8;'>منصة إدارة المشاريع الهندسية</p>", unsafe_allow_html=True)
         
         username = st.text_input("👤 اسم المستخدم", key="login_user")
         password = st.text_input("🔑 كلمة المرور", type="password", key="login_pass")
@@ -108,6 +100,7 @@ if st.sidebar.button("🔒 تسجيل الخروج"):
 # --- قسم رفع الملفات ---
 st.subheader("📤 رفع مستند أو مخطط جديد")
 col1, col2 = st.columns([3, 2])
+
 with col1:
     uploaded_file = st.file_uploader("اختر ملف (Excel, Word, PDF, CAD، أو مستند نصي)", type=["xlsx", "docx", "pdf", "txt", "csv", "dwg", "dxf", "jpg", "png"])
 
@@ -153,20 +146,20 @@ if df_files.empty:
     st.info("ℹ️ لم يتم رفع أي ملفات حتى الآن. قم برفع ملف أعلاه.")
 else:
     header_cols = st.columns([0.4, 2.3, 0.8, 0.9, 1.8, 1.1, 1.1, 1.1])
-    header_cols[0].markdown("م")
-    header_cols[1].markdown("اسم الملف")
-    header_cols[2].markdown("النوع")
-    header_cols[3].markdown("الحجم")
-    header_cols[4].markdown("الملاحظات")
-    header_cols[5].markdown("🌐 فتح")
-    header_cols[6].markdown("💾 تحميل")
-    header_cols[7].markdown("🗑️ حذف")
+    header_cols[0].markdown("*م*")
+    header_cols[1].markdown("*اسم الملف*")
+    header_cols[2].markdown("*النوع*")
+    header_cols[3].markdown("*الحجم*")
+    header_cols[4].markdown("*الملاحظات*")
+    header_cols[5].markdown("*🌐 فتح*")
+    header_cols[6].markdown("*💾 تحميل*")
+    header_cols[7].markdown("*🗑️ حذف*")
     st.markdown("---")
 
     for idx, row in df_files.iterrows():
         row_cols = st.columns([0.4, 2.3, 0.8, 0.9, 1.8, 1.1, 1.1, 1.1])
         
-        row_cols[0].markdown(f"{idx + 1}")
+        row_cols[0].markdown(f"*{idx + 1}*")
         row_cols[1].markdown(f"{row['name']}")
         row_cols[2].markdown(f"{row['type']}")
         row_cols[3].markdown(f"{row['size']}")
@@ -211,7 +204,8 @@ else:
                     )
             else:
                 st.error("مفقود")
-                # 3. زرار الحذف
+
+        # 3. زرار الحذف
         with row_cols[7]:
             if st.button("🗑️ حذف", key=f"delete_btn_{idx}", use_container_width=True):
                 if os.path.exists(str(row['path'])):
