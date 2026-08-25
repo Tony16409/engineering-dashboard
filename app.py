@@ -73,14 +73,14 @@ if not st.session_state["authenticated"]:
         
         # نموذج تسجيل الدخول مع دعم Enter والخط العريض
         with st.form("login_form"):
-            st.markdown("<h2 style='text-align: center; color: white;'>🏗️ تسجيل الدخول</h2>", unsafe_allow_html=True)
-            st.markdown("<p style='text-align: center; color: #94a3b8;'>منصة إدارة المشاريع الهندسية</p>", unsafe_allow_html=True)
+            st.markdown("<h2 style='text-align: center; color: white;'>🏗️ Log in to Al-Farida Group</h2>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center; color: #94a3b8;'>Al-Farida Company Management 📐</p>", unsafe_allow_html=True)
             
-            username = st.text_input("👤 اسم المستخدم", key="login_user")
-            password = st.text_input("🔑 كلمة المرور", type="password", key="login_pass")
+            username = st.text_input("👤 Username", key="login_user")
+            password = st.text_input("🔑 password", type="password", key="login_pass")
             
             st.write("")
-            submit_button = st.form_submit_button("🚪 الدخول للمنصة", use_container_width=True)
+            submit_button = st.form_submit_button("🚪 Log in", use_container_width=True)
             
             if submit_button:
                 if username == "admin" and password == "1234":
@@ -101,7 +101,7 @@ st.markdown('<h1 style="text-align: center; color: #333; background: #fff; paddi
 st.markdown(f'<p style="text-align: center; color: #555;">أهلاً بك يا باشمهندس أنطونيوس | التاريخ: {datetime.now().strftime("%Y-%m-%d")}</p>', unsafe_allow_html=True)
 st.markdown("---")
 
-if st.sidebar.button("🔒 تسجيل الخروج"):
+if st.sidebar.button("🔒 Log out"):
     st.session_state["authenticated"] = False
     st.rerun()
 
