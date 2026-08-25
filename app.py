@@ -18,26 +18,21 @@ if not os.path.exists(DB_FILE):
     df_init = pd.DataFrame(columns=["name", "type", "size", "note", "date", "path"])
     df_init.to_csv(DB_FILE, index=False)
 
-# --- كود CSS لتنسيق واجهة الدخول والخلفية الهندسية الجديدة ---
+# --- كود CSS لتنسيق الواجهة بدون المساس بالأزرار والجدول ---
 st.markdown("""
 <style>
 [data-testid="stAppViewContainer"] {
     background-color: #f4f6f9;
 }
 .login-card {
-    background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url("https://images.unsplash.com/photo-1581094264568-6190d67d0736?q=80&w=1920&auto=format&fit=crop");
-    background-size: cover;
-    background-position: center;
-    padding: 40px;
-    border-radius: 20px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
     max-width: 450px;
-    margin: 12vh auto;
+    margin: 2vh auto;
     text-align: center;
-    color: white;
-}
-.login-card h2, .login-card p, .login-card label {
-    color: white !important;
+    border-top: 5px solid #ff4b4b;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -50,9 +45,12 @@ if "authenticated" not in st.session_state:
 if not st.session_state["authenticated"]:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
+        # عرض الصورة الهندسية بوضوح فوق كارت تسجيل الدخول مباشرة لتجنب مشاكل الـ CSS
+        st.image("https://images.unsplash.com/photo-1581094264568-6190d67d0736?q=80&w=1920&auto=format&fit=crop", use_container_width=True)
+        
         st.markdown('<div class="login-card">', unsafe_allow_html=True)
         st.markdown("<h2>🏗️ تسجيل الدخول</h2>", unsafe_allow_html=True)
-        st.markdown("<p>منصة إدارة المشاريع الهندسية</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color: #666;'>منصة إدارة المشاريع الهندسية</p>", unsafe_allow_html=True)
         
         username = st.text_input("👤 اسم المستخدم")
         password = st.text_input("🔑 كلمة المرور", type="password")
