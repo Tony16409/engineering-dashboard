@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime
 
 # --- إعدادات الصفحة ---
-st.set_page_config(page_title="منصة إدارة المشاريع الهندسية", page_icon="🏗️", layout="wide")
+st.set_page_config(page_title="Al-Farida Group", page_icon="🏗️", layout="wide")
 
 # --- كود CSS لتخلي الصورة خلفية لجزء تسجيل الدخول (Card) ---
 st.markdown("""
@@ -41,7 +41,7 @@ if not st.session_state["authenticated"]:
     with col2:
         st.markdown('<div class="login-card">', unsafe_allow_html=True)
         st.markdown("<h2>🏗️ تسجيل الدخول</h2>", unsafe_allow_html=True)
-        st.markdown("<p>منصة إدارة المشاريع الهندسية</p>", unsafe_allow_html=True)
+        st.markdown("<p>Al-Farida Group</p>", unsafe_allow_html=True)
         
         username = st.text_input("👤 اسم المستخدم")
         password = st.text_input("🔑 كلمة المرور", type="password")
