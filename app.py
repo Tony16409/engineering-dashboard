@@ -3,16 +3,14 @@ import pandas as pd
 from datetime import datetime
 
 # --- إعدادات الصفحة ---
-st.set_page_config(page_title="Al-Farida Group", page_icon="🏗️", layout="wide")
+st.set_page_config(page_title="منصة إدارة المشاريع الهندسية", page_icon="🏗️", layout="wide")
 
-# --- كود CSS لتخلي الصورة خلفية لجزء تسجيل الدخول (Card) ---
+# --- كود CSS لتنسيق واجهة الدخول والخلفية ---
 st.markdown("""
 <style>
-/* خلفية الصفحة العامة لون هادئ */
 [data-testid="stAppViewContainer"] {
     background-color: #f4f6f9;
 }
-/* تنسيق كارد تسجيل الدخول وتثبيت صورتك الخلفية جواها */
 .login-card {
     background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("https://images.unsplash.com/photo-1581094264568-6190d67d0736?q=80&w=1920&auto=format&fit=crop");
     background-size: cover;
@@ -40,14 +38,14 @@ if not st.session_state["authenticated"]:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.markdown('<div class="login-card">', unsafe_allow_html=True)
-        st.markdown("<h2>🏗️ Log in</h2>", unsafe_allow_html=True)
-        st.markdown("<p>Al-Farida Group</p>", unsafe_allow_html=True)
+        st.markdown("<h2>🏗️ تسجيل الدخول</h2>", unsafe_allow_html=True)
+        st.markdown("<p>منصة إدارة المشاريع الهندسية</p>", unsafe_allow_html=True)
         
-        username = st.text_input("👤 Username")
-        password = st.text_input("🔑 password", type="password")
+        username = st.text_input("👤 اسم المستخدم")
+        password = st.text_input("🔑 كلمة المرور", type="password")
         
         st.write("")
-        if st.button("🚪 Login", type="primary", use_container_width=True):
+        if st.button("🚪 الدخول للمنصة", type="primary", use_container_width=True):
             if username == "admin" and password == "1234":
                 st.session_state["authenticated"] = True
                 st.rerun()
@@ -69,6 +67,14 @@ if st.sidebar.button("🔒 تسجيل الخروج"):
     st.session_state["authenticated"] = False
     st.rerun()
 
+# --- تهيئة قائمة الملفات في الذاكرة لتحديثها أوتوماتيك ---
+if "files_list" not in st.session_state:
+    st.session_state["files_list"] = [
+        {"اسم الملف": "مشروع_فيلا_الرياض_واجهة.dwg", "النوع": "CAD", "الحجم": "15.2 MB", "الملاحظات": "معتمد من الاستشاري", "تاريخ الرفع": "2026-08-24"},
+        {"اسم الملف": "جدول_كميات_مول_جدة.xlsx", "النوع": "Excel", "الحجم": "1.2 MB", "الملاحظات": "نسخة أولية للمراجعة", "تاريخ الرفع": "2026-08-23"}
+    ]
+
+# --- قسم رفع الملفات ---
 st.subheader("📤 رفع مستند أو مخطط جديد")
 col1, col2 = st.columns([3, 2])
 
@@ -78,24 +84,39 @@ with col1:
 with col2:
     note = st.text_input("📝 ملاحظات على الملف (اختياري)")
 
+# عند الضغط على زر الحفظ والرفع، يتم إضافة الملف للجدول أوتوماتيك
 if st.button("💾 حفظ ورفع الملف", type="primary"):
     if uploaded_file is not None:
-        st.success(f"✅ تم رفع الملف بنجاح: {uploaded_file.name}")
+        # حساب حجم الملف بالكيلوبايت أو الميجابايت
+        file_size_kb = uploaded_file.size / 1024
+        if file_size_kb > 1024:
+            file_size_str = f"{file_size_kb / 1024:.1f} MB"
+        else:
+            file_size_str = f"{file_size_kb:.1f} KB"
+            # استخراج امتداد الملف
+        file_ext = uploaded_file.name.split('.')[-1].upper()
+        
+        # إضافة الملف الجديد للقائمة المحفوظة
+        new_row = {
+            "اسم الملف": uploaded_file.name,
+            "النوع": file_ext,
+            "الحجم": file_size_str,
+            "الملاحظات": note if note else "بدون ملاحظات",
+            "تاريخ الرفع": datetime.now().strftime("%Y-%m-%d")
+        }
+        st.session_state["files_list"].insert(0, new_row) # إضافته في أول الجدول
+        st.success(f"✅ تم رفع الملف وإضافته للجدول بنجاح: {uploaded_file.name}")
     else:
         st.warning("⚠️ يرجى اختيار ملف أولاً.")
 
 st.markdown("---")
+
+# --- سجل الملفات والمقاييس المرفوعة ---
 st.subheader("📋 سجل الملفات والمقاييس المرفوعة")
 
-data = {
-    "اسم الملف": ["مشروع_فيلا_الرياض_واجهة.dwg", "جدول_كميات_مول_جدة.xlsx", "تقرير_تربة_مشروع_القاهرة.pdf", "مخطط_كهرباء_فيلا.pdf"],
-    "النوع": ["CAD", "Excel", "PDF", "PDF"],
-    "الحجم": ["15.2 MB", "1.2 MB", "500 KB", "2.8 MB"],
-    "الملاحظات": ["معتمد من الاستشاري", "نسخة أولية للمراجعة", "مختوم وموقع", ""],
-    "تاريخ الرفع": ["2024-08-25", "2024-08-24", "2024-08-23", "2024-08-22"]
-}
-df = pd.DataFrame(data)
+# عرض الجدول مباشرة من القائمة المحدثة
+df = pd.DataFrame(st.session_state["files_list"])
 st.dataframe(df, use_container_width=True)
 
 st.markdown("---")
-st.markdown('<p style="text-align: center; color: #777;">منصة إدارة المشاريع الهندسية - تصميم وتنفيذ مهندس أنطونيوس © 2026</p>', unsafe_allow_html=True)
+st.markdown('<p style="text-align: center; color: #777;">منصة إدارة المشاريع الهندسية - تصميم وتنفيذ أنطونيوس © 2026</p>', unsafe_allow_html=True)
