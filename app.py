@@ -43,11 +43,11 @@ if not st.session_state["authenticated"]:
         st.markdown("<h2>🏗️ Log in</h2>", unsafe_allow_html=True)
         st.markdown("<p>Al-Farida Group</p>", unsafe_allow_html=True)
         
-        username = st.text_input("👤 اسم المستخدم")
-        password = st.text_input("🔑 كلمة المرور", type="password")
+        username = st.text_input("👤 Username")
+        password = st.text_input("🔑 password", type="password")
         
         st.write("")
-        if st.button("🚪 الدخول للمنصة", type="primary", use_container_width=True):
+        if st.button("🚪 Login", type="primary", use_container_width=True):
             if username == "admin" and password == "1234":
                 st.session_state["authenticated"] = True
                 st.rerun()
