@@ -105,14 +105,14 @@ if st.sidebar.button("🔒 Log out"):
     st.rerun()
 
 # --- قسم رفع الملفات ---
-st.subheader("📤 رفع مستند أو مخطط جديد")
+st.subheader("📤 Upload a new document or plan")
 col1, col2 = st.columns([3, 2])
 
 with col1:
     uploaded_file = st.file_uploader("اختر ملف (Excel, Word, PDF, CAD، أو مستند نصي)", type=["xlsx", "docx", "pdf", "txt", "csv", "dwg", "dxf", "jpg", "png"])
 
 with col2:
-    note = st.text_input("📝 ملاحظات على الملف (اختياري)", key="file_note")
+    note = st.text_input("📝 Notes on the file", key="file_note")
 
 if st.button("💾 حفظ ورفع الملف", type="primary"):
     if uploaded_file is not None:
