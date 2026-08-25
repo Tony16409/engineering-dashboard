@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import os
-import base64
 
 # --- إعدادات الصفحة ---
 st.set_page_config(page_title="منصة إدارة المشاريع الهندسية", page_icon="🏗️", layout="wide")
@@ -134,7 +133,7 @@ else:
     header_cols[2].markdown("النوع")
     header_cols[3].markdown("الحجم")
     header_cols[4].markdown("الملاحظات")
-    header_cols[5].markdown("🌐 عرض مباشر")
+    header_cols[5].markdown("🌐 فتح في تبويب")
     header_cols[6].markdown("💾 تحميل")
     st.markdown("---")
 
@@ -147,10 +146,36 @@ else:
         row_cols[3].markdown(f"{row['size']}")
         row_cols[4].markdown(f"{row['note']}")
         
+        # زرار "فتح" كـ رابط HTML مباشر يفتح في تبويب جديد بدون قيود
         with row_cols[5]:
-            if st.button("🌐 عرض", key=f"view_btn_{idx}", use_container_width=True):
-                st.session_state[f"show_file_{idx}"] = not st.session_state.get(f"show_file_{idx}", False)
+            if os.path.exists(row['path']):
+                # قراءة الملف وعرضه كزرار ويب يفتح في تاب جديد باستخدام الـ Data URI المباشر للرابط
+                with open(row['path'], "rb") as f:
+                    file_bytes = f.read()
+                import base64
+                b64_data = base64.b64encode(file_bytes).decode('utf-8')
+                mime_type = "application/pdf" if row['type'] == "PDF" else "application/octet-stream"
+                
+                # رابط HTML مباشر يفتح في تاب جديد مع منع الحظر
+                open_link = f'''
+                <a href="data:{mime_type};base64,{b64_data}" target="_blank" style="
+                    display: inline-block;
+                    background-color: #ff4b4b;
+                    color: white;
+                    padding: 6px 12px;
+                    border-radius: 4px;
+                    text-decoration: none;
+                    text-align: center;
+                    font-size: 14px;
+                    font-weight: 500;
+                    width: 100%;
+                ">🌐 فتح</a>
+                '''
+                st.markdown(open_link, unsafe_allow_html=True)
+            else:
+                st.error("مفقود")
 
+        # زرار "تحميل" في خانة مستقلة
         with row_cols[6]:
             if os.path.exists(row['path']):
                 with open(row['path'], "rb") as file_to_download:
@@ -163,28 +188,6 @@ else:
                     )
             else:
                 st.error("مفقود")
-        
-        if st.session_state.get(f"show_file_{idx}", False):
-            st.info(f"📄 معاينة الملف: {row['name']}")
-            if os.path.exists(row['path']):
-                file_ext = row['name'].split('.')[-1].lower()
-                if file_ext == 'pdf':
-                    with open(row['path'], "rb") as f:
-                        base64_pdf = base64.b64encode(f.read()).decode('utf-8')
-                    pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}#toolbar=0" width="100%" height="600px" style="border:1px solid #ccc; border-radius:8px;"></iframe>'
-                    st.markdown(pdf_display, unsafe_allow_html=True)
-                elif file_ext in ['jpg', 'jpeg', 'png']:
-                    st.image(row['path'], caption=row['name'], use_container_width=True)
-                elif file_ext in ['xlsx', 'csv']:
-                    df_view = pd.read_excel(row['path']) if file_ext == 'xlsx' else pd.read_csv(row['path'])
-                    st.dataframe(df_view, use_container_width=True)
-                elif file_ext == 'txt':
-                    with open(row['path'], "r", encoding="utf-8", errors="ignore") as tf:
-                        st.text_area("محتوى الملف:", tf.read(), height=250)
-                else:
-                    st.warning("⚠️ عذراً، هذا الامتداد غير معمول له معاينة مباشرة. يمكنك تحميله بالضغط على زر تحميل.")
-            else:
-                st.error("⚠️ الملف غير موجود على الخادم.")
             
         st.markdown("---")
 
