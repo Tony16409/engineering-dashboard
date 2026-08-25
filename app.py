@@ -5,7 +5,7 @@ import os
 import base64
 
 # --- إعدادات الصفحة ---
-st.set_page_config(page_title="منصة إدارة المشاريع الهندسية", page_icon="🏗️", layout="wide")
+st.set_page_config(page_title="Al-Farida Company Management 📐", page_icon="🏗️", layout="wide")
 
 # --- إنشاء مجلد حفظ الملفات وقاعدة البيانات لو مش موجودين ---
 UPLOAD_DIR = "uploaded_files"
