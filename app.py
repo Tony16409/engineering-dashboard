@@ -27,10 +27,10 @@ st.markdown("""
 /* تنسيق المستطيل العلوي لكلمة Al-Farida Group بحجم كبير وفخم */
 .brand-box {
     background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    padding: 22px 30px;
+    padding: 25px 20px;
     border-radius: 18px;
     max-width: 500px;
     margin: 25px auto 20px auto;
@@ -39,12 +39,12 @@ st.markdown("""
 }
 .brand-text {
     color: #ffffff;
-    font-size: 38px;
-    font-weight: 800;
-    letter-spacing: 2.5px;
+    font-size: 52px;
+    font-weight: 900;
+    letter-spacing: 2px;
     margin: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    text-shadow: 0 2px 10px rgba(255, 255, 255, 0.2);
+    text-shadow: 0 3px 15px rgba(255, 255, 255, 0.3);
 }
 .login-container {
     max-width: 500px;
