@@ -56,7 +56,7 @@ if not st.session_state["authenticated"]:
     st.stop()
 
 # =================================================================
-# --- لوحة التحكم الرئيسية (تظهر بكامل الشاشة بعد تسجيل الدخول) ---
+# --- لوحة التحكم الرئيسية ---
 # =================================================================
 
 st.markdown('<h1 style="text-align: center; color: #333; background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">📂 لوحة تحكم إدارة الملفات والمشاريع الهندسية 📂</h1>', unsafe_allow_html=True)
@@ -67,12 +67,9 @@ if st.sidebar.button("🔒 تسجيل الخروج"):
     st.session_state["authenticated"] = False
     st.rerun()
 
-# --- تهيئة قائمة الملفات في الذاكرة لتحديثها أوتوماتيك ---
+# --- تهيئة قائمة الملفات في الذاكرة مع حفظ محتوى الملف نفسه للفتح والتحميل ---
 if "files_list" not in st.session_state:
-    st.session_state["files_list"] = [
-        {"اسم الملف": "مشروع_فيلا_الرياض_واجهة.dwg", "النوع": "CAD", "الحجم": "15.2 MB", "الملاحظات": "معتمد من الاستشاري", "تاريخ الرفع": "2026-08-24"},
-        {"اسم الملف": "جدول_كميات_مول_جدة.xlsx", "النوع": "Excel", "الحجم": "1.2 MB", "الملاحظات": "نسخة أولية للمراجعة", "تاريخ الرفع": "2026-08-23"}
-    ]
+    st.session_state["files_list"] = []
 
 # --- قسم رفع الملفات ---
 st.subheader("📤 رفع مستند أو مخطط جديد")
@@ -82,41 +79,54 @@ with col1:
     uploaded_file = st.file_uploader("اختر ملف (Excel, PDF, CAD، أو مستند نصي)", type=["xlsx", "pdf", "txt", "csv", "dwg", "dxf", "jpg", "png"])
 
 with col2:
-    note = st.text_input("📝 ملاحظات على الملف (اختياري)")
+    note = st.text_input("📝 ملاحظات على الملف (اختياري)", key="file_note")
 
-# عند الضغط على زر الحفظ والرفع، يتم إضافة الملف للجدول أوتوماتيك
 if st.button("💾 حفظ ورفع الملف", type="primary"):
     if uploaded_file is not None:
-        # حساب حجم الملف بالكيلوبايت أو الميجابايت
         file_size_kb = uploaded_file.size / 1024
-        if file_size_kb > 1024:
-            file_size_str = f"{file_size_kb / 1024:.1f} MB"
-        else:
-            file_size_str = f"{file_size_kb:.1f} KB"
-            # استخراج امتداد الملف
+        file_size_str = f"{file_size_kb / 1024:.1f} MB" if file_size_kb > 1024 else f"{file_size_kb:.1f} KB"
         file_ext = uploaded_file.name.split('.')[-1].upper()
         
-        # إضافة الملف الجديد للقائمة المحفوظة
-        new_row = {
-            "اسم الملف": uploaded_file.name,
-            "النوع": file_ext,
-            "الحجم": file_size_str,
-            "الملاحظات": note if note else "بدون ملاحظات",
-            "تاريخ الرفع": datetime.now().strftime("%Y-%m-%d")
+        # حفظ بيانات الملف ومحتواه الفعلي عشان نقدر نفتحه ونتحكم فيه
+        new_file_data = {
+            "name": uploaded_file.name,
+            "type": file_ext,
+            "size": file_size_str,
+            "note": note if note else "بدون ملاحظات",
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "data": uploaded_file.getvalue() # الاحتفاظ بمحتوى الملف البايتس
         }
-        st.session_state["files_list"].insert(0, new_row) # إضافته في أول الجدول
-        st.success(f"✅ تم رفع الملف وإضافته للجدول بنجاح: {uploaded_file.name}")
+        st.session_state["files_list"].insert(0, new_file_data)
+        st.success(f"✅ تم رفع الملف بنجاح: {uploaded_file.name}")
     else:
         st.warning("⚠️ يرجى اختيار ملف أولاً.")
 
 st.markdown("---")
+# --- سجل الملفات والمقاييس المرفوعة (مع زراير الفتح والتحميل المباشر) ---
+st.subheader("📋 سجل الملفات والمقاييس المرفوعة (اضغط لفتح الملف)")
 
-# --- سجل الملفات والمقاييس المرفوعة ---
-st.subheader("📋 سجل الملفات والمقاييس المرفوعة")
+if not st.session_state["files_list"]:
+    st.info("ℹ️ لم يتم رفع أي ملفات حتى الآن. قم بررفع ملف أعلاه.")
+else:
+    for idx, file_info in enumerate(st.session_state["files_list"]):
+        col_name, col_type, col_size, col_note, col_btn = st.columns([3, 1, 1, 2, 2])
+        
+        with col_name:
+            st.markdown(f"📄 {file_info['name']}")
+        with col_type:
+            st.markdown(f"{file_info['type']}")
+        with col_size:
+            st.markdown(f"{file_info['size']}")
+        with col_note:
+            st.markdown(f"{file_info['note']}")
+        with col_btn:
+            # زرار مباشر يفتح أو يحمل الملف بضغطة واحدة!
+            st.download_button(
+                label="📥 فتح / تحميل",
+                data=file_info["data"],
+                file_name=file_info["name"],
+                key=f"download_btn_{idx}"
+            )
+        st.markdown("---")
 
-# عرض الجدول مباشرة من القائمة المحدثة
-df = pd.DataFrame(st.session_state["files_list"])
-st.dataframe(df, use_container_width=True)
-
-st.markdown("---")
 st.markdown('<p style="text-align: center; color: #777;">منصة إدارة المشاريع الهندسية - تصميم وتنفيذ أنطونيوس © 2026</p>', unsafe_allow_html=True)
