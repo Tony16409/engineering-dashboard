@@ -18,21 +18,27 @@ if not os.path.exists(DB_FILE):
     df_init = pd.DataFrame(columns=["name", "type", "size", "note", "date", "path"])
     df_init.to_csv(DB_FILE, index=False)
 
-# --- كود CSS لتنسيق الواجهة بدون المساس بالأزرار والجدول ---
+# --- كود CSS لتنسيق الواجهة وخلفية هندسية احترافية ---
 st.markdown("""
 <style>
 [data-testid="stAppViewContainer"] {
-    background-color: #f4f6f9;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
 }
 .login-card {
-    background-color: #ffffff;
-    padding: 30px;
-    border-radius: 15px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
     max-width: 450px;
-    margin: 2vh auto;
+    margin: 10vh auto;
     text-align: center;
-    border-top: 5px solid #ff4b4b;
+    color: white;
+}
+.login-card h2, .login-card p, .login-card label {
+    color: white !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -45,12 +51,9 @@ if "authenticated" not in st.session_state:
 if not st.session_state["authenticated"]:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        # عرض الصورة الهندسية بوضوح فوق كارت تسجيل الدخول مباشرة لتجنب مشاكل الـ CSS
-        st.image("https://images.unsplash.com/photo-1581094264568-6190d67d0736?q=80&w=1920&auto=format&fit=crop", use_container_width=True)
-        
         st.markdown('<div class="login-card">', unsafe_allow_html=True)
         st.markdown("<h2>🏗️ تسجيل الدخول</h2>", unsafe_allow_html=True)
-        st.markdown("<p style='color: #666;'>منصة إدارة المشاريع الهندسية</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color: #94a3b8;'>منصة إدارة المشاريع الهندسية</p>", unsafe_allow_html=True)
         
         username = st.text_input("👤 اسم المستخدم")
         password = st.text_input("🔑 كلمة المرور", type="password")
