@@ -228,4 +228,4 @@ else:
             
         st.markdown("---")
 
-st.markdown('<p style="text-align: center; color: #777;">منصة إدارة شركة  الفريدة - تصميم وتنفيذ مهندس أنطونيوس © 2026</p>', unsafe_allow_html=True)
+st.markdown('<p style="text-align: center; color: #777;">منصة إدارة  شركة الفريدة - تصميم وتنفيذ مهندس أنطونيوس © 2026</p>', unsafe_allow_html=True)
