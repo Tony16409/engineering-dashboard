@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime
 import os
 import base64
+
 # --- إعدادات الصفحة ---
 st.set_page_config(page_title="منصة إدارة المشاريع الهندسية", page_icon="🏗️", layout="wide")
 
@@ -146,7 +147,7 @@ else:
         row_cols[3].markdown(f"{row['size']}")
         row_cols[4].markdown(f"{row['note']}")
         
-        # زرار "فتح" في خانة مستقلة تماماً
+        # زرار "فتح" في خانة مستقلة
         with row_cols[5]:
             if st.button("🌐 فتح", key=f"open_btn_{idx}", use_container_width=True):
                 st.session_state[f"open_status_{idx}"] = not st.session_state.get(f"open_status_{idx}", False)
@@ -165,18 +166,23 @@ else:
             else:
                 st.error("مفقود")
         
-        # لو المستخدم ضغط على زرار "فتح"، يعرض الملف فوراً وبوضوح تحت الصف بدون شاشة بيضاء
+        # عرض الملف بطريقة Object / Embed الآمنة التي تتخطى حظر المتصفح
         if st.session_state.get(f"open_status_{idx}", False):
             st.markdown(f"### 📄 معاينة الملف: {row['name']}")
             if os.path.exists(row['path']):
                 file_ext = row['name'].split('.')[-1].lower()
                 if file_ext == 'pdf':
-                    # استخدام طريقة قراءة سليمة ومستقرة للـ PDF
                     with open(row['path'], "rb") as f:
                         PDF_bytes = f.read()
-                    import base64
                     base64_pdf = base64.b64encode(PDF_bytes).decode('utf-8')
-                    pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="700px" style="border: none; border-radius: 10px;"></iframe>'
+                    
+                    # استخدام عنصر object لتخطي حظر متصفح Edge ومنع المشكلة السابقة
+                    pdf_display = f'''
+                    <object data="data:application/pdf;base64,{base64_pdf}" type="application/pdf" width="100%" height="700px" style="border-radius: 10px;">
+                        <embed src="data:application/pdf;base64,{base64_pdf}" type="application/pdf" />
+                        <p style="text-align:center; padding:20px;">متصفحك لا يدعم العرض المباشر. يمكنك استخدام زر التحميل أدناه.</p>
+                    </object>
+                    '''
                     st.markdown(pdf_display, unsafe_allow_html=True)
                 elif file_ext in ['jpg', 'jpeg', 'png']:
                     st.image(row['path'], caption=row['name'], use_container_width=True)
@@ -192,4 +198,5 @@ else:
                 st.error("⚠️ ملف المعاينة غير موجود في مسار السيرفر.")
             
         st.markdown("---")
-        st.markdown('<p style="text-align: center; color: #777;">منصة إدارة المشاريع الهندسية - تصميم وتنفيذ أنطونيوس © 2026</p>', unsafe_allow_html=True)
+
+st.markdown('<p style="text-align: center; color: #777;">منصة إدارة المشاريع الهندسية - تصميم وتنفيذ أنطونيوس © 2026</p>', unsafe_allow_html=True)
