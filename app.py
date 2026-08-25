@@ -55,8 +55,8 @@ if not st.session_state["authenticated"]:
         st.markdown("<h2>🏗️ تسجيل الدخول</h2>", unsafe_allow_html=True)
         st.markdown("<p style='color: #94a3b8;'>منصة إدارة المشاريع الهندسية</p>", unsafe_allow_html=True)
         
-        username = st.text_input("👤 اسم المستخدم")
-        password = st.text_input("🔑 كلمة المرور", type="password")
+        username = st.text_input("👤 اسم المستخدم", key="login_user")
+        password = st.text_input("🔑 كلمة المرور", type="password", key="login_pass")
         
         st.write("")
         if st.button("🚪 الدخول للمنصة", type="primary", use_container_width=True):
@@ -86,7 +86,8 @@ st.subheader("📤 رفع مستند أو مخطط جديد")
 col1, col2 = st.columns([3, 2])
 
 with col1:
-    uploaded_file = st.file_uploader("اختر ملف (Excel, PDF, CAD، أو مستند نصي)", type=["xlsx", "pdf", "txt", "csv", "dwg", "dxf", "jpg", "png"])
+    # أضفنا docx للقائمة عشان يتقبل فوراً من غير مشاكل
+    uploaded_file = st.file_uploader("اختر ملف (Excel, Word, PDF, CAD، أو مستند نصي)", type=["xlsx", "docx", "pdf", "txt", "csv", "dwg", "dxf", "jpg", "png"])
 
 with col2:
     note = st.text_input("📝 ملاحظات على الملف (اختياري)", key="file_note")
@@ -100,6 +101,7 @@ if st.button("💾 حفظ ورفع الملف", type="primary"):
         file_size_kb = uploaded_file.size / 1024
         file_size_str = f"{file_size_kb / 1024:.1f} MB" if file_size_kb > 1024 else f"{file_size_kb:.1f} KB"
         file_ext = uploaded_file.name.split('.')[-1].upper()
+        
         df = pd.read_csv(DB_FILE)
         new_row = pd.DataFrame([{
             "name": uploaded_file.name,
