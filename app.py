@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import os
+import base64
 
 # --- إعدادات الصفحة ---
 st.set_page_config(page_title="منصة إدارة المشاريع الهندسية", page_icon="🏗️", layout="wide")
@@ -91,7 +92,6 @@ with col2:
 
 if st.button("💾 حفظ ورفع الملف", type="primary"):
     if uploaded_file is not None:
-        # حفظ الملف في مجلد السيرفر دائمًا
         file_path = os.path.join(UPLOAD_DIR, uploaded_file.name)
         with open(file_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
@@ -99,7 +99,7 @@ if st.button("💾 حفظ ورفع الملف", type="primary"):
         file_size_kb = uploaded_file.size / 1024
         file_size_str = f"{file_size_kb / 1024:.1f} MB" if file_size_kb > 1024 else f"{file_size_kb:.1f} KB"
         file_ext = uploaded_file.name.split('.')[-1].upper()
-        # قراءة قاعدة البيانات القديمة وإضافة الملف الجديد في البداية
+        
         df = pd.read_csv(DB_FILE)
         new_row = pd.DataFrame([{
             "name": uploaded_file.name,
@@ -120,7 +120,7 @@ if st.button("💾 حفظ ورفع الملف", type="primary"):
 
 st.markdown("---")
 
-# --- سجل الملفات والمقاييس الدائم ---
+# --- سجل الملفات والمقاييس (أعمدة منفصلة للفتح والتحميل) ---
 st.subheader("📋 سجل الملفات والمقاييس المرفوعة والمرقمة (حفظ دائم)")
 
 df_files = pd.read_csv(DB_FILE)
@@ -128,17 +128,19 @@ df_files = pd.read_csv(DB_FILE)
 if df_files.empty:
     st.info("ℹ️ لم يتم رفع أي ملفات حتى الآن. قم برفع ملف أعلاه.")
 else:
-    header_cols = st.columns([0.6, 2.8, 1.0, 1.2, 2.2, 1.8])
+    # 7 أعمدة منسقة بدقة: (م - اسم الملف - النوع - الحجم - الملاحظات - فتح - تحميل)
+    header_cols = st.columns([0.5, 2.6, 0.9, 1.0, 2.0, 1.2, 1.2])
     header_cols[0].markdown("م")
     header_cols[1].markdown("اسم الملف")
     header_cols[2].markdown("النوع")
     header_cols[3].markdown("الحجم")
     header_cols[4].markdown("الملاحظات")
-    header_cols[5].markdown("📥 فتح وتنزيل فوري")
+    header_cols[5].markdown("🌐 فتح")
+    header_cols[6].markdown("💾 تحميل")
     st.markdown("---")
 
     for idx, row in df_files.iterrows():
-        row_cols = st.columns([0.6, 2.8, 1.0, 1.2, 2.2, 1.8])
+        row_cols = st.columns([0.5, 2.6, 0.9, 1.0, 2.0, 1.2, 1.2])
         
         row_cols[0].markdown(f"{idx + 1}")
         row_cols[1].markdown(f"{row['name']}")
@@ -146,18 +148,43 @@ else:
         row_cols[3].markdown(f"{row['size']}")
         row_cols[4].markdown(f"{row['note']}")
         
+        # خانة زرار الفتح في متصفح جوجل كروم (تبويب جديد)
         with row_cols[5]:
+            if os.path.exists(row['path']):
+                with open(row['path'], "rb") as f:
+                    bytes_data = f.read()
+                    b64 = base64.b64encode(bytes_data).decode('utf-8')
+                    file_ext = row['name'].split('.')[-1].lower()
+                    mime_map = {
+                        'pdf': 'application/pdf',
+                        'png': 'image/png',
+                        'jpg': 'image/jpeg',
+                        'jpeg': 'image/jpeg',
+                        'txt': 'text/plain',
+                        'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                        'csv': 'text/csv'
+                    }
+                    mime_type = mime_map.get(file_ext, 'application/octet-stream')
+                    
+                    # رابط HTML شيك بيفتح في تبويب جديد target="_blank"
+                    open_link = f'<a href="data:{mime_type};base64,{b64}" target="_blank" style="display:block; text-align:center; padding:6px 0; background-color:#1976D2; color:white; border-radius:5px; text-decoration:none; font-weight:bold; font-size:13px;">🌐 فتح</a>'
+                    st.markdown(open_link, unsafe_allow_html=True)
+            else:
+                st.markdown("غير متوفر")
+
+        # خانة زرار التحميل المباشر
+        with row_cols[6]:
             if os.path.exists(row['path']):
                 with open(row['path'], "rb") as file_to_download:
                     st.download_button(
-                        label="🚀 فتح وتنزيل",
+                        label="📥 تحميل",
                         data=file_to_download,
                         file_name=row['name'],
                         key=f"download_btn_{idx}",
                         use_container_width=True
                     )
             else:
-                st.error("⚠️ الملف غير موجود على السيرفر")
+                st.error("مفقود")
             
         st.markdown("---")
 
