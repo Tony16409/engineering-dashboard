@@ -192,7 +192,7 @@ else:
                     font-size: 13px;
                     font-weight: 500;
                     width: 100%;
-                ">فتح</a>
+                ">Open</a>
                 '''
                 st.markdown(open_link, unsafe_allow_html=True)
             else:
@@ -203,7 +203,7 @@ else:
             if os.path.exists(str(row['path'])):
                 with open(row['path'], "rb") as file_to_download:
                     st.download_button(
-                        label="تحميل",
+                        label="Download",
                         data=file_to_download,
                         file_name=row['name'],
                         key=f"download_btn_{idx}",
@@ -214,7 +214,7 @@ else:
 
         # 3. زرار الحذف
         with row_cols[7]:
-            if st.button("🗑️ حذف", key=f"delete_btn_{idx}", use_container_width=True):
+            if st.button("🗑️ Delete", key=f"delete_btn_{idx}", use_container_width=True):
                 if os.path.exists(str(row['path'])):
                     try:
                         os.remove(row['path'])
