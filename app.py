@@ -40,7 +40,7 @@ if not st.session_state["authenticated"]:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.markdown('<div class="login-card">', unsafe_allow_html=True)
-        st.markdown("<h2>🏗️ تسجيل الدخول</h2>", unsafe_allow_html=True)
+        st.markdown("<h2>🏗️ Log in</h2>", unsafe_allow_html=True)
         st.markdown("<p>Al-Farida Group</p>", unsafe_allow_html=True)
         
         username = st.text_input("👤 اسم المستخدم")
