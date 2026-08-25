@@ -114,7 +114,7 @@ with col1:
 with col2:
     note = st.text_input("📝 Notes on the file", key="file_note")
 
-if st.button("💾 حفظ ورفع الملف", type="primary"):
+if st.button("💾 Upload File & Save", type="primary"):
     if uploaded_file is not None:
         file_path = os.path.join(UPLOAD_DIR, uploaded_file.name)
         with open(file_path, "wb") as f:
@@ -145,7 +145,7 @@ if st.button("💾 حفظ ورفع الملف", type="primary"):
 st.markdown("---")
 
 # --- سجل الملفات والمقاييس ---
-st.subheader("📋 سجل الملفات والمقاييس المرفوعة والمرقمة (حفظ دائم)")
+st.subheader("📋 Uploaded Files & Quantities Record")
 
 df_files = pd.read_csv(DB_FILE)
 
