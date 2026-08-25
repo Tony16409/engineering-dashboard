@@ -102,31 +102,51 @@ if st.button("💾 حفظ ورفع الملف", type="primary"):
         st.warning("⚠️ يرجى اختيار ملف أولاً.")
 
 st.markdown("---")
-# --- سجل الملفات والمقاييس المرفوعة (مع زراير الفتح والتحميل المباشر) ---
-st.subheader("📋 سجل الملفات والمقاييس المرفوعة (اضغط لفتح الملف)")
+# --- سجل الملفات والمقاييس (جدول مرتب بأعمدة مستقلة لـ "فتح" و "تحميل") ---
+st.subheader("📋 سجل الملفات والمقاييس المرفوعة والمرقمة")
 
 if not st.session_state["files_list"]:
-    st.info("ℹ️ لم يتم رفع أي ملفات حتى الآن. قم بررفع ملف أعلاه.")
+    st.info("ℹ️ لم يتم رفع أي ملفات حتى الآن. قم برفع ملف أعلاه.")
 else:
+    # رأس الجدول الاحترافي
+    header_cols = st.columns([0.6, 2.5, 0.9, 1.1, 1.8, 1.2, 1.2])
+    header_cols[0].markdown("م")
+    header_cols[1].markdown("اسم الملف")
+    header_cols[2].markdown("النوع")
+    header_cols[3].markdown("الحجم")
+    header_cols[4].markdown("الملاحظات")
+    header_cols[5].markdown("👁️ فتح الملف")
+    header_cols[6].markdown("💾 تحميل")
+    st.markdown("---")
+
+    # عرض الصفوف مرقمة
     for idx, file_info in enumerate(st.session_state["files_list"]):
-        col_name, col_type, col_size, col_note, col_btn = st.columns([3, 1, 1, 2, 2])
+        row_cols = st.columns([0.6, 2.5, 0.9, 1.1, 1.8, 1.2, 1.2])
         
-        with col_name:
-            st.markdown(f"📄 {file_info['name']}")
-        with col_type:
-            st.markdown(f"{file_info['type']}")
-        with col_size:
-            st.markdown(f"{file_info['size']}")
-        with col_note:
-            st.markdown(f"{file_info['note']}")
-        with col_btn:
-            # زرار مباشر يفتح أو يحمل الملف بضغطة واحدة!
+        # الترقيم
+        row_cols[0].markdown(f"{idx + 1}")
+        row_cols[1].markdown(f"{file_info['name']}")
+        row_cols[2].markdown(f"{file_info['type']}")
+        row_cols[3].markdown(f"{file_info['size']}")
+        row_cols[4].markdown(f"{file_info['note']}")
+        
+        # زرار الفتح في خانة لوحده
+        with row_cols[5]:
+            b64 = base64.b64encode(file_info["data"]).decode('utf-8')
+            file_extension = file_info['name'].split('.')[-1].lower()
+            mime_type = "application/pdf" if file_extension == "pdf" else "application/octet-stream"
+            href = f'<a href="data:{mime_type};base64,{b64}" target="_blank" style="padding:6px 12px; background-color:#2e7d32; color:white; border-radius:5px; text-decoration:none; font-size:14px;">👁️ فتح</a>'
+            st.markdown(href, unsafe_allow_html=True)
+            
+        # زرار التحميل في خانة لوحده جنبه
+        with row_cols[6]:
             st.download_button(
-                label="📥 فتح / تحميل",
+                label="📥 تحميل",
                 data=file_info["data"],
                 file_name=file_info["name"],
                 key=f"download_btn_{idx}"
             )
+            
         st.markdown("---")
 
 st.markdown('<p style="text-align: center; color: #777;">منصة إدارة المشاريع الهندسية - تصميم وتنفيذ أنطونيوس © 2026</p>', unsafe_allow_html=True)
