@@ -39,9 +39,9 @@ st.markdown("""
 }
 .brand-text {
     color: #ffffff;
-    font-size: 34px;
+    font-size: 42px;
     font-weight: 800;
-    letter-spacing: 2.5px;
+    letter-spacing: 3px;
     margin: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     text-shadow: 0 2px 10px rgba(255, 255, 255, 0.2);
