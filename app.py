@@ -18,35 +18,36 @@ if not os.path.exists(DB_FILE):
     df_init = pd.DataFrame(columns=["name", "type", "size", "note", "date", "path"])
     df_init.to_csv(DB_FILE, index=False)
 
-# --- كود CSS لتنسيق الواجهة وخلفية هندسية احترافية ---
+# --- كود CSS لتنسيق الواجهة وخلفية هندسية احترافية مع تكبير العنوان العلوي ---
 st.markdown("""
 <style>
 [data-testid="stAppViewContainer"] {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
 }
-/* تنسيق المستطيل العلوي لكلمة Al-Farida Group */
+/* تنسيق المستطيل العلوي لكلمة Al-Farida Group بحجم كبير وفخم */
 .brand-box {
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.15);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    padding: 16px 25px;
-    border-radius: 15px;
-    max-width: 450px;
-    margin: 30px auto 20px auto;
+    padding: 22px 30px;
+    border-radius: 18px;
+    max-width: 500px;
+    margin: 25px auto 20px auto;
     text-align: center;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 .brand-text {
     color: #ffffff;
-    font-size: 24px;
-    font-weight: 700;
-    letter-spacing: 2px;
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: 2.5px;
     margin: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    text-shadow: 0 2px 10px rgba(255, 255, 255, 0.2);
 }
 .login-container {
-    max-width: 450px;
+    max-width: 500px;
     margin: 0 auto;
     color: white;
 }
@@ -64,23 +65,29 @@ if "authenticated" not in st.session_state:
 if not st.session_state["authenticated"]:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        # مستطيل العنوان العلوي
+        # مستطيل العنوان العلوي بخط كبير وفخم
         st.markdown('<div class="brand-box"><p class="brand-text">Al-Farida Group</p></div>', unsafe_allow_html=True)
         
         st.markdown('<div class="login-container">', unsafe_allow_html=True)
-        st.markdown("<h2 style='text-align: center; color: white;'>🏗️ تسجيل الدخول</h2>", unsafe_allow_html=True)
-        st.markdown("<p style='text-align: center; color: #94a3b8;'>منصة إدارة المشاريع الهندسية</p>", unsafe_allow_html=True)
         
-        username = st.text_input("👤 اسم المستخدم", key="login_user")
-        password = st.text_input("🔑 كلمة المرور", type="password", key="login_pass")
-        
-        st.write("")
-        if st.button("🚪 الدخول للمنصة", type="primary", use_container_width=True):
-            if username == "admin" and password == "1234":
-                st.session_state["authenticated"] = True
-                st.rerun()
-            else:
-                st.error("❌ اسم المستخدم أو كلمة المرور غير صحيحة.")
+        # استخدام st.form لدعم الضغط على زر Enter لتسجيل الدخول مباشرة
+        with st.form("login_form"):
+            st.markdown("<h2 style='text-align: center; color: white;'>🏗️ تسجيل الدخول</h2>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center; color: #94a3b8;'>منصة إدارة المشاريع الهندسية</p>", unsafe_allow_html=True)
+            
+            username = st.text_input("👤 اسم المستخدم", key="login_user")
+            password = st.text_input("🔑 كلمة المرور", type="password", key="login_pass")
+            
+            st.write("")
+            submit_button = st.form_submit_button("🚪 الدخول للمنصة", use_container_width=True)
+            
+            if submit_button:
+                if username == "admin" and password == "1234":
+                    st.session_state["authenticated"] = True
+                    st.rerun()
+                else:
+                    st.error("❌ اسم المستخدم أو كلمة المرور غير صحيحة.")
+                    
         st.markdown('</div>', unsafe_allow_html=True)
         
     st.stop()
