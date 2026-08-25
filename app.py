@@ -105,7 +105,7 @@ if st.sidebar.button("🔒 Log out"):
     st.rerun()
 
 # --- قسم رفع الملفات ---
-st.subheader("📤 رفع مستند أو مخطط جديد")
+st.subheader("📤 رفع مستند أو مخطط  جديد")
 col1, col2 = st.columns([3, 2])
 
 with col1:
