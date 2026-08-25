@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-import base64
 
 # --- إعدادات الصفحة ---
 st.set_page_config(page_title="منصة إدارة المشاريع الهندسية", page_icon="🏗️", layout="wide")
@@ -57,7 +56,7 @@ if not st.session_state["authenticated"]:
     st.stop()
 
 # =================================================================
-# --- لوحة التحكم الرئيسية (تظهر بكامل الشاشة بعد تسجيل الدخول) ---
+# --- لوحة التحكم الرئيسية ---
 # =================================================================
 
 st.markdown('<h1 style="text-align: center; color: #333; background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">📂 لوحة تحكم إدارة الملفات والمشاريع الهندسية 📂</h1>', unsafe_allow_html=True)
@@ -103,26 +102,25 @@ if st.button("💾 حفظ ورفع الملف", type="primary"):
         st.warning("⚠️ يرجى اختيار ملف أولاً.")
 
 st.markdown("---")
-# --- سجل الملفات والمقاييس (جدول مرتب بأعمدة مستقلة لـ "فتح بالمتصفح" و "تحميل") ---
-st.subheader("📋 سجل الملفات والمقاييس المرفوعة والمرقمة")
 
+# --- سجل الملفات والمقاييس والمرقمة ---
+st.subheader("📋 سجل الملفات والمقاييس المرفوعة والمرقمة")
 if not st.session_state["files_list"]:
     st.info("ℹ️ لم يتم رفع أي ملفات حتى الآن. قم برفع ملف أعلاه.")
 else:
-    # رأس الجدول الاحترافي
-    header_cols = st.columns([0.6, 2.5, 0.9, 1.1, 1.8, 1.2, 1.2])
+    # رأس الجدول الاحترافي (تم تقليل عدد الأعمدة لتركيز المساحة على الأزرار)
+    header_cols = st.columns([0.6, 2.8, 1.0, 1.2, 2.2, 1.8])
     header_cols[0].markdown("م")
     header_cols[1].markdown("اسم الملف")
     header_cols[2].markdown("النوع")
     header_cols[3].markdown("الحجم")
     header_cols[4].markdown("الملاحظات")
-    header_cols[5].markdown("🌐 فتح بالمتصفح")
-    header_cols[6].markdown("💾 تحميل")
+    header_cols[5].markdown("📥 فتح وتنزيل فوري")
     st.markdown("---")
 
     # عرض الصفوف مرقمة
     for idx, file_info in enumerate(st.session_state["files_list"]):
-        row_cols = st.columns([0.6, 2.5, 0.9, 1.1, 1.8, 1.2, 1.2])
+        row_cols = st.columns([0.6, 2.8, 1.0, 1.2, 2.2, 1.8])
         
         row_cols[0].markdown(f"{idx + 1}")
         row_cols[1].markdown(f"{file_info['name']}")
@@ -130,28 +128,14 @@ else:
         row_cols[3].markdown(f"{file_info['size']}")
         row_cols[4].markdown(f"{file_info['note']}")
         
-        # زرار الفتح بمتصفح كروم في خانة مستقلة
+        # زرار التنزيل والفتح الفوري المضمون 100%
         with row_cols[5]:
-            b64 = base64.b64encode(file_info["data"]).decode('utf-8')
-            file_ext = file_info['name'].split('.')[-1].lower()
-            mime_map = {
-                'pdf': 'application/pdf',
-                'png': 'image/png',
-                'jpg': 'image/jpeg',
-                'jpeg': 'image/jpeg',
-                'txt': 'text/plain'
-            }
-            mime_type = mime_map.get(file_ext, 'application/octet-stream')
-            open_link = f'<a href="data:{mime_type};base64,{b64}" target="_blank" style="padding:6px 12px; background-color:#1976D2; color:white; border-radius:5px; text-decoration:none; font-size:14px;">🌐 فتح بمتصفح</a>'
-            st.markdown(open_link, unsafe_allow_html=True)
-            
-        # زرار التحميل في خانة مستقلة
-        with row_cols[6]:
             st.download_button(
-                label="📥 تحميل",
+                label="🚀 فتح وتنزيل",
                 data=file_info["data"],
                 file_name=file_info["name"],
-                key=f"download_btn_{idx}"
+                key=f"download_btn_{idx}",
+                use_container_width=True
             )
             
         st.markdown("---")
