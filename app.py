@@ -18,28 +18,28 @@ if not os.path.exists(DB_FILE):
     df_init = pd.DataFrame(columns=["name", "type", "size", "note", "date", "path"])
     df_init.to_csv(DB_FILE, index=False)
 
-# --- كود CSS لتنسيق الواجهة وخلفية هندسية احترافية مع تكبير العنوان العلوي ---
+# --- كود CSS لتنسيق الواجهة وخلفية هندسية احترافية ---
 st.markdown("""
 <style>
 [data-testid="stAppViewContainer"] {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
 }
-/* تنسيق المستطيل العلوي لكلمة Al-Farida Group بحجم كبير وفخم */
+/* مستطيل العنوان العلوي الضخم والمليان */
 .brand-box {
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.2);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    padding: 25px 20px;
+    padding: 22px 20px;
     border-radius: 18px;
-    max-width: 500px;
-    margin: 25px auto 20px auto;
+    max-width: 550px;
+    margin: 25px auto 15px auto;
     text-align: center;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 .brand-text {
     color: #ffffff;
-    font-size: 52px;
+    font-size: 48px;
     font-weight: 900;
     letter-spacing: 2px;
     margin: 0;
@@ -47,7 +47,7 @@ st.markdown("""
     text-shadow: 0 3px 15px rgba(255, 255, 255, 0.3);
 }
 .login-container {
-    max-width: 500px;
+    max-width: 550px;
     margin: 0 auto;
     color: white;
 }
@@ -65,12 +65,12 @@ if "authenticated" not in st.session_state:
 if not st.session_state["authenticated"]:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        # مستطيل العنوان العلوي بخط كبير وفخم
+        # مستطيل العنوان العلوي الضخم
         st.markdown('<div class="brand-box"><p class="brand-text">Al-Farida Group</p></div>', unsafe_allow_html=True)
         
         st.markdown('<div class="login-container">', unsafe_allow_html=True)
         
-        # استخدام st.form لدعم الضغط على زر Enter لتسجيل الدخول مباشرة
+        # نموذج تسجيل الدخول مع دعم Enter والخط العريض
         with st.form("login_form"):
             st.markdown("<h2 style='text-align: center; color: white;'>🏗️ تسجيل الدخول</h2>", unsafe_allow_html=True)
             st.markdown("<p style='text-align: center; color: #94a3b8;'>منصة إدارة المشاريع الهندسية</p>", unsafe_allow_html=True)
