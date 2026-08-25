@@ -129,7 +129,7 @@ if st.button("💾 Upload File & Save", type="primary"):
             "name": uploaded_file.name,
             "type": file_ext,
             "size": file_size_str,
-            "note": note if note else "بدون ملاحظات",
+            "note": note if note else "No notes",
             "date": datetime.now().strftime("%Y-%m-%d"),
             "path": file_path
         }])
@@ -153,14 +153,14 @@ if df_files.empty:
     st.info("ℹ️ لم يتم رفع أي ملفات حتى الآن. قم برفع ملف أعلاه.")
 else:
     header_cols = st.columns([0.4, 2.3, 0.8, 0.9, 1.8, 1.1, 1.1, 1.1])
-    header_cols[0].markdown("*م*")
-    header_cols[1].markdown("*اسم الملف*")
-    header_cols[2].markdown("*النوع*")
-    header_cols[3].markdown("*الحجم*")
-    header_cols[4].markdown("*الملاحظات*")
-    header_cols[5].markdown("*🌐 فتح*")
-    header_cols[6].markdown("*💾 تحميل*")
-    header_cols[7].markdown("*🗑️ حذف*")
+    header_cols[0].markdown("*No*")
+    header_cols[1].markdown("*File Name*")
+    header_cols[2].markdown("*Type*")
+    header_cols[3].markdown("*Size*")
+    header_cols[4].markdown("*Notes*")
+    header_cols[5].markdown("*🌐 Open*")
+    header_cols[6].markdown("*💾 Download*")
+    header_cols[7].markdown("*🗑️ Delete*")
     st.markdown("---")
 
     for idx, row in df_files.iterrows():
