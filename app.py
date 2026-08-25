@@ -18,15 +18,14 @@ if not os.path.exists(DB_FILE):
     df_init = pd.DataFrame(columns=["name", "type", "size", "note", "date", "path"])
     df_init.to_csv(DB_FILE, index=False)
 
-# --- كود CSS لتنسيق واجهة الدخول والخلفية ---
+# --- كود CSS لتنسيق واجهة الدخول والخلفية الهندسية الجديدة ---
 st.markdown("""
 <style>
 [data-testid="stAppViewContainer"] {
     background-color: #f4f6f9;
 }
 .login-card {
-    /* حط هنا رابط الصورة المباشر أو اسم الصورة لو رفعتها في نفس المجلد */
-    background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url("رابط_الصورة_هنا");
+    background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url("https://images.unsplash.com/photo-1581094264568-6190d67d0736?q=80&w=1920&auto=format&fit=crop");
     background-size: cover;
     background-position: center;
     padding: 40px;
@@ -42,6 +41,7 @@ st.markdown("""
 }
 </style>
 """, unsafe_allow_html=True)
+
 # --- إدارة حالة تسجيل الدخول ---
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
@@ -99,7 +99,6 @@ if st.button("💾 حفظ ورفع الملف", type="primary"):
         file_size_kb = uploaded_file.size / 1024
         file_size_str = f"{file_size_kb / 1024:.1f} MB" if file_size_kb > 1024 else f"{file_size_kb:.1f} KB"
         file_ext = uploaded_file.name.split('.')[-1].upper()
-        
         df = pd.read_csv(DB_FILE)
         new_row = pd.DataFrame([{
             "name": uploaded_file.name,
