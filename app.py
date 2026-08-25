@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import os
-import base64
 
 # --- إعدادات الصفحة ---
 st.set_page_config(page_title="منصة إدارة المشاريع الهندسية", page_icon="🏗️", layout="wide")
@@ -120,7 +119,7 @@ if st.button("💾 حفظ ورفع الملف", type="primary"):
 
 st.markdown("---")
 
-# --- سجل الملفات والمقاييس (أعمدة منفصلة للفتح والتحميل) ---
+# --- سجل الملفات والمقاييس ---
 st.subheader("📋 سجل الملفات والمقاييس المرفوعة والمرقمة (حفظ دائم)")
 
 df_files = pd.read_csv(DB_FILE)
@@ -128,14 +127,13 @@ df_files = pd.read_csv(DB_FILE)
 if df_files.empty:
     st.info("ℹ️ لم يتم رفع أي ملفات حتى الآن. قم برفع ملف أعلاه.")
 else:
-    # 7 أعمدة منسقة بدقة: (م - اسم الملف - النوع - الحجم - الملاحظات - فتح - تحميل)
     header_cols = st.columns([0.5, 2.6, 0.9, 1.0, 2.0, 1.2, 1.2])
     header_cols[0].markdown("م")
     header_cols[1].markdown("اسم الملف")
     header_cols[2].markdown("النوع")
     header_cols[3].markdown("الحجم")
     header_cols[4].markdown("الملاحظات")
-    header_cols[5].markdown("🌐 فتح")
+    header_cols[5].markdown("🌐 فتح (عرض)")
     header_cols[6].markdown("💾 تحميل")
     st.markdown("---")
 
@@ -148,31 +146,12 @@ else:
         row_cols[3].markdown(f"{row['size']}")
         row_cols[4].markdown(f"{row['note']}")
         
-        # خانة زرار الفتح في متصفح جوجل كروم (تبويب جديد)
+        # زرار "فتح" في خانة مستقلة تماماً
         with row_cols[5]:
-            if os.path.exists(row['path']):
-                with open(row['path'], "rb") as f:
-                    bytes_data = f.read()
-                    b64 = base64.b64encode(bytes_data).decode('utf-8')
-                    file_ext = row['name'].split('.')[-1].lower()
-                    mime_map = {
-                        'pdf': 'application/pdf',
-                        'png': 'image/png',
-                        'jpg': 'image/jpeg',
-                        'jpeg': 'image/jpeg',
-                        'txt': 'text/plain',
-                        'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                        'csv': 'text/csv'
-                    }
-                    mime_type = mime_map.get(file_ext, 'application/octet-stream')
-                    
-                    # رابط HTML شيك بيفتح في تبويب جديد target="_blank"
-                    open_link = f'<a href="data:{mime_type};base64,{b64}" target="_blank" style="display:block; text-align:center; padding:6px 0; background-color:#1976D2; color:white; border-radius:5px; text-decoration:none; font-weight:bold; font-size:13px;">🌐 فتح</a>'
-                    st.markdown(open_link, unsafe_allow_html=True)
-            else:
-                st.markdown("غير متوفر")
+            if st.button("🌐 فتح", key=f"open_btn_{idx}", use_container_width=True):
+                st.session_state[f"open_status_{idx}"] = not st.session_state.get(f"open_status_{idx}", False)
 
-        # خانة زرار التحميل المباشر
+        # زرار "تحميل" في خانة مستقلة جنبه
         with row_cols[6]:
             if os.path.exists(row['path']):
                 with open(row['path'], "rb") as file_to_download:
@@ -185,7 +164,32 @@ else:
                     )
             else:
                 st.error("مفقود")
+        
+        # لو المستخدم ضغط على زرار "فتح"، يعرض الملف فوراً وبوضوح تحت الصف بدون شاشة بيضاء
+        if st.session_state.get(f"open_status_{idx}", False):
+            st.markdown(f"### 📄 معاينة الملف: {row['name']}")
+            if os.path.exists(row['path']):
+                file_ext = row['name'].split('.')[-1].lower()
+                if file_ext == 'pdf':
+                    # استخدام طريقة قراءة سليمة ومستقرة للـ PDF
+                    with open(row['path'], "rb") as f:
+                        PDF_bytes = f.read()
+                    import base64
+                    base64_pdf = base64.b64encode(PDF_bytes).decode('utf-8')
+                    pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="700px" style="border: none; border-radius: 10px;"></iframe>'
+                    st.markdown(pdf_display, unsafe_allow_html=True)
+                elif file_ext in ['jpg', 'jpeg', 'png']:
+                    st.image(row['path'], caption=row['name'], use_container_width=True)
+                elif file_ext in ['xlsx', 'csv']:
+                    df_view = pd.read_excel(row['path']) if file_ext == 'xlsx' else pd.read_csv(row['path'])
+                    st.dataframe(df_view, use_container_width=True)
+                elif file_ext == 'txt':
+                    with open(row['path'], "r", encoding="utf-8", errors="ignore") as tf:
+                        st.text_area("محتوى الملف النصي:", tf.read(), height=300)
+                else:
+                    st.warning("⚠️ هذا الملف غير مخصص للعرض المباشر، يمكنك تحميله ومراجعته على جهازك.")
+            else:
+                st.error("⚠️ ملف المعاينة غير موجود في مسار السيرفر.")
             
         st.markdown("---")
-
-st.markdown('<p style="text-align: center; color: #777;">منصة إدارة المشاريع الهندسية - تصميم وتنفيذ أنطونيوس © 2026</p>', unsafe_allow_html=True)
+        st.markdown('<p style="text-align: center; color: #777;">منصة إدارة المشاريع الهندسية - تصميم وتنفيذ أنطونيوس © 2026</p>', unsafe_allow_html=True)
