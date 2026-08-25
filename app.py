@@ -38,13 +38,12 @@ if st.button("💾 حفظ الملف وإضافته للسجل"):
 
 st.markdown("---")
 
-# --- سجل الملفات والمقاييس ---
+# --- سجل الملفات والمقاييس والمرقمة ---
 st.subheader("📋 سجل الملفات والمقاييس المرفوعة والمرقمة")
 
 if not st.session_state["files_list"]:
     st.info("ℹ️ لم يتم رفع أي ملفات حتى الآن. قم برفع ملف أعلاه.")
 else:
-    # رأس الجدول الاحترافي
     header_cols = st.columns([0.6, 2.5, 0.9, 1.1, 1.8, 1.2, 1.2])
     header_cols[0].markdown("م")
     header_cols[1].markdown("اسم الملف")
@@ -55,7 +54,6 @@ else:
     header_cols[6].markdown("💾 تحميل")
     st.markdown("---")
 
-    # عرض الصفوف مرقمة
     for idx, file_info in enumerate(st.session_state["files_list"]):
         row_cols = st.columns([0.6, 2.5, 0.9, 1.1, 1.8, 1.2, 1.2])
         
@@ -93,8 +91,8 @@ if "active_view" in st.session_state:
             pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="600px" type="application/pdf"></iframe>'
             st.markdown(pdf_display, unsafe_allow_html=True)
         elif file_ext in ['png', 'jpg', 'jpeg']:
-            st.image(selected_file["data"], caption=selected_file['name'], use_column_width=True)
-            elif file_ext in ['txt', 'csv']:
+            st.image(selected_file["data"], caption=selected_file['name'])
+        elif file_ext in ['txt', 'csv']:
             text_content = selected_file["data"].decode('utf-8')
             st.text_area("محتوى الملف:", text_content, height=300)
         else:
