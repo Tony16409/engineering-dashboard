@@ -18,7 +18,7 @@ if not os.path.exists(DB_FILE):
     df_init = pd.DataFrame(columns=["name", "type", "size", "note", "date", "path"])
     df_init.to_csv(DB_FILE, index=False)
 
-# --- كود CSS لتنسيق الواجهة وخلفية هندسية احترافية ---
+# --- كود CSS لتنسيق الواجهة وخلفية هندسية احترافية مع تخصيص مستطيل العنوان العلوي ---
 st.markdown("""
 <style>
 [data-testid="stAppViewContainer"] {
@@ -33,12 +33,33 @@ st.markdown("""
     border-radius: 20px;
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
     max-width: 450px;
-    margin: 10vh auto;
+    margin: 5vh auto;
     text-align: center;
     color: white;
 }
 .login-card h2, .login-card p, .login-card label {
     color: white !important;
+}
+/* تنسيق المستطيل العلوي لكلمة Al-Farida Group */
+.brand-box {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding: 12px 25px;
+    border-radius: 12px;
+    max-width: 450px;
+    margin: 20px auto 10px auto;
+    text-align: center;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+.brand-text {
+    color: #ffffff;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -51,6 +72,9 @@ if "authenticated" not in st.session_state:
 if not st.session_state["authenticated"]:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
+        # طباعة اسم المجموعة داخل المستطيل العلوي بتصميم فخم
+        st.markdown('<div class="brand-box"><p class="brand-text">Al-Farida Group</p></div>', unsafe_allow_html=True)
+        
         st.markdown('<div class="login-card">', unsafe_allow_html=True)
         st.markdown("<h2>🏗️ تسجيل الدخول</h2>", unsafe_allow_html=True)
         st.markdown("<p style='color: #94a3b8;'>منصة إدارة المشاريع الهندسية</p>", unsafe_allow_html=True)
@@ -84,9 +108,7 @@ if st.sidebar.button("🔒 تسجيل الخروج"):
 # --- قسم رفع الملفات ---
 st.subheader("📤 رفع مستند أو مخطط جديد")
 col1, col2 = st.columns([3, 2])
-
 with col1:
-    # أضفنا docx للقائمة عشان يتقبل فوراً من غير مشاكل
     uploaded_file = st.file_uploader("اختر ملف (Excel, Word, PDF, CAD، أو مستند نصي)", type=["xlsx", "docx", "pdf", "txt", "csv", "dwg", "dxf", "jpg", "png"])
 
 with col2:
@@ -189,8 +211,7 @@ else:
                     )
             else:
                 st.error("مفقود")
-
-        # 3. زرار الحذف
+                # 3. زرار الحذف
         with row_cols[7]:
             if st.button("🗑️ حذف", key=f"delete_btn_{idx}", use_container_width=True):
                 if os.path.exists(str(row['path'])):
@@ -206,4 +227,4 @@ else:
             
         st.markdown("---")
 
-st.markdown('<p style="text-align: center; color: #777;">منصة إدارة المشاريع الهندسية - تصميم وتنفيذ أنطونيوس © 2026</p>', unsafe_allow_html=True)
+st.markdown('<p style="text-align: center; color: #777;">منصة إدارة المشاريع الهندسية - تصميم وتنفيذ أنطونيوس © 2026</p>', unsafe_allow_html=True
