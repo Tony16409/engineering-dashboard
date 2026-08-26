@@ -3,20 +3,88 @@ import pandas as pd
 from datetime import datetime
 import os
 import base64
+import gspread
+from google.oauth2.service_account import Credentials
 
 # --- إعدادات الصفحة ---
 st.set_page_config(page_title="Al-Farida Company Management 📐", page_icon="🏗️", layout="wide")
 
-# --- إعدادات قاعدة البيانات المحلية المتزامنة ---
+# --- إعدادات فولدر الملفات المحلي ---
 UPLOAD_DIR = "uploaded_files"
-DB_FILE = "files_db.csv"
-
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
-if not os.path.exists(DB_FILE):
-    df_init = pd.DataFrame(columns=["name", "type", "size", "note", "date", "path"])
-    df_init.to_csv(DB_FILE, index=False)
+# --- إعداد الاتصال بجوجل شيت أوتوماتيكياً ---
+SHEET_URL = "https://docs.google.com/spreadsheets/d/1kG0V8iqNv4nCVDSYA-nRl_K5UCYpTbLGa5vh4lp8ug0/edit?usp=sharing"
+
+@st.cache_resource
+py_client = None
+def get_sheet():
+    try:
+        # استخدام إعدادات السيرفر السحابي Secrets في Streamlit للربط الآمن
+        if "gcp_service_account" in st.secrets:
+            creds_dict = dict(st.secrets["gcp_service_account"])
+            scopes = [
+                "https://www.googleapis.com/auth/spreadsheets",
+                "https://www.googleapis.com/auth/drive"
+            ]
+            creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+            client = gspread.authorize(creds)
+            sheet = client.open_by_url(SHEET_URL).worksheet("Sheet1")
+            return sheet
+    except Exception as e:
+        return None
+    return None
+
+def load_data_from_sheet():
+    sheet = get_sheet()
+    if sheet:
+        try:
+            data = sheet.get_all_records()
+            df = pd.DataFrame(data)
+            if not df.empty:
+                return df
+        except Exception:
+            pass
+    # في حال عدم توفر الاتصال السحابي المباشر مؤقتاً، نعتمد على ملف محلي احتياطي
+    if os.path.exists("files_db.csv"):
+        return pd.read_csv("files_db.csv")
+    return pd.DataFrame(columns=["name", "type", "size", "note", "date", "path"])
+
+def save_row_to_sheet(row_dict):
+    sheet = get_sheet()
+    if sheet:
+        try:
+            sheet.append_row([
+                row_dict["name"],
+                row_dict["type"],
+                row_dict["size"],
+                row_dict["note"],
+                row_dict["date"],
+                row_dict["path"]
+            ])
+        except Exception:
+            pass
+    
+    # حفظ نسخة احتياطية محلية دائماً لضمان عدم ضياع البيانات
+    df = load_data_from_sheet()
+    new_df = pd.DataFrame([row_dict])
+    df = pd.concat([new_df, df], ignore_index=True)
+    df.to_csv("files_db.csv", index=False)
+
+def delete_row_from_sheet(index_to_delete):
+    sheet = get_sheet()
+    if sheet:
+        try:
+            # الصف في جوجل شيت يبدأ من 2 (لأن الصف الأول هو الـ Header)
+            sheet.delete_rows(index_to_delete + 2)
+        except Exception:
+            pass
+    
+    df = load_data_from_sheet()
+    if not df.empty and index_to_delete < len(df):
+        df = df.drop(index_to_delete).reset_index(drop=True)
+        df.to_csv("files_db.csv", index=False)
 
 # --- كود CSS لتنسيق الواجهة وخلفية هندسية احترافية ---
 st.markdown("""
@@ -119,20 +187,18 @@ if st.button("💾 Upload File & Save", type="primary"):
         file_size_str = f"{file_size_kb / 1024:.1f} MB" if file_size_kb > 1024 else f"{file_size_kb:.1f} KB"
         file_ext = uploaded_file.name.split('.')[-1].upper()
         
-        df = pd.read_csv(DB_FILE)
-        new_row = pd.DataFrame([{
+        row_data = {
             "name": uploaded_file.name,
             "type": file_ext,
             "size": file_size_str,
             "note": note if note else "No notes",
             "date": datetime.now().strftime("%Y-%m-%d"),
             "path": file_path
-        }])
+        }
         
-        df = pd.concat([new_row, df], ignore_index=True)
-        df.to_csv(DB_FILE, index=False)
+        save_row_to_sheet(row_data)
         
-        st.success(f"✅ تم حفظ الملف ورفع المقاسات بنجاح: {uploaded_file.name}")
+        st.success(f"✅ تم حفظ الملف وربطه بجوجل شيت بنجاح: {uploaded_file.name}")
         st.rerun()
     else:
         st.warning("⚠️ يرجى اختيار ملف أولاً.")
@@ -140,12 +206,12 @@ if st.button("💾 Upload File & Save", type="primary"):
 st.markdown("---")
 
 # --- سجل الملفات والمقاييس ---
-st.subheader("📋 Uploaded Files & Quantities Record")
+st.subheader("📋 Uploaded Files & Quantities Record (Google Sheets Synced)")
 
-df_files = pd.read_csv(DB_FILE)
+df_files = load_data_from_sheet()
 
 if df_files.empty:
-    st.info("ℹ️ لم يتم رفع أي ملفات حتى الآن. قم برفع ملف أعلاه.")
+    st.info("ℹ️ لم يتم العثور على سجلات في جوجل شيت حتى الآن، أو يتم تحميل الجدول.")
 else:
     header_cols = st.columns([0.4, 2.3, 0.8, 0.9, 1.8, 1.1, 1.1, 1.1])
     header_cols[0].markdown("No")
@@ -169,8 +235,9 @@ else:
         
         # 1. زرار الفتح
         with row_cols[5]:
-            if os.path.exists(str(row['path'])):
-                with open(row['path'], "rb") as f:
+            path_val = str(row['path'])
+            if os.path.exists(path_val):
+                with open(path_val, "rb") as f:
                     file_bytes = f.read()
                 b64_data = base64.b64encode(file_bytes).decode('utf-8')
                 mime_type = "application/pdf" if row['type'] == "PDF" else "application/octet-stream"
@@ -191,12 +258,13 @@ else:
                 '''
                 st.markdown(open_link, unsafe_allow_html=True)
             else:
-                st.error("مفقود")
+                st.markdown("<span style='color:gray;'>مرفوع</span>", unsafe_allow_html=True)
 
         # 2. زرار التحميل
         with row_cols[6]:
-            if os.path.exists(str(row['path'])):
-                with open(row['path'], "rb") as file_to_download:
+            path_val = str(row['path'])
+            if os.path.exists(path_val):
+                with open(path_val, "rb") as file_to_download:
                     st.download_button(
                         label="Download",
                         data=file_to_download,
@@ -205,20 +273,13 @@ else:
                         use_container_width=True
                     )
             else:
-                st.error("مفقود")
+                st.write("-")
 
         # 3. زرار الحذف
         with row_cols[7]:
             if st.button("🗑️ Delete", key=f"delete_btn_{idx}", use_container_width=True):
-                if os.path.exists(str(row['path'])):
-                    try:
-                        os.remove(row['path'])
-                    except Exception:
-                        pass
-                
-                df_files = df_files.drop(idx)
-                df_files.to_csv(DB_FILE, index=False)
-                st.success(f"تم حذف الملف {row['name']} بنجاح!")
+                delete_row_from_sheet(idx)
+                st.success(f"تم حذف الملف بنجاح!")
                 st.rerun()
             
         st.markdown("---")
