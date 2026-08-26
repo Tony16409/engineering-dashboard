@@ -15,13 +15,11 @@ if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
 # --- إعداد الاتصال بجوجل شيت أوتوماتيكياً ---
-SHEET_URL = "https://docs.google.com/spreadsheets/d/1kG0V8iqNv4nCVDSYA-nRl_K5UCYpTbLGa5vh4lp8ug0/edit?usp=sharing"
+SHEET_URL = "https://docs.google.com/spreadsheets/d/1kG0V8iqNv4nCVDSYA-nRL_K5UCYpTbLGa5vh4Ip8ug0/edit?usp=sharing"
 
 @st.cache_resource
-py_client = None
 def get_sheet():
     try:
-        # استخدام إعدادات السيرفر السحابي Secrets في Streamlit للربط الآمن
         if "gcp_service_account" in st.secrets:
             creds_dict = dict(st.secrets["gcp_service_account"])
             scopes = [
@@ -32,8 +30,8 @@ def get_sheet():
             client = gspread.authorize(creds)
             sheet = client.open_by_url(SHEET_URL).worksheet("Sheet1")
             return sheet
-    except Exception as e:
-        return None
+    except Exception:
+        pass
     return None
 
 def load_data_from_sheet():
@@ -46,7 +44,6 @@ def load_data_from_sheet():
                 return df
         except Exception:
             pass
-    # في حال عدم توفر الاتصال السحابي المباشر مؤقتاً، نعتمد على ملف محلي احتياطي
     if os.path.exists("files_db.csv"):
         return pd.read_csv("files_db.csv")
     return pd.DataFrame(columns=["name", "type", "size", "note", "date", "path"])
@@ -66,7 +63,6 @@ def save_row_to_sheet(row_dict):
         except Exception:
             pass
     
-    # حفظ نسخة احتياطية محلية دائماً لضمان عدم ضياع البيانات
     df = load_data_from_sheet()
     new_df = pd.DataFrame([row_dict])
     df = pd.concat([new_df, df], ignore_index=True)
@@ -76,7 +72,6 @@ def delete_row_from_sheet(index_to_delete):
     sheet = get_sheet()
     if sheet:
         try:
-            # الصف في جوجل شيت يبدأ من 2 (لأن الصف الأول هو الـ Header)
             sheet.delete_rows(index_to_delete + 2)
         except Exception:
             pass
@@ -198,7 +193,7 @@ if st.button("💾 Upload File & Save", type="primary"):
         
         save_row_to_sheet(row_data)
         
-        st.success(f"✅ تم حفظ الملف وربطه بجوجل شيت بنجاح: {uploaded_file.name}")
+        st.success(f"✅ تم حفظ الملف بنجاح: {uploaded_file.name}")
         st.rerun()
     else:
         st.warning("⚠️ يرجى اختيار ملف أولاً.")
@@ -211,7 +206,7 @@ st.subheader("📋 Uploaded Files & Quantities Record (Google Sheets Synced)")
 df_files = load_data_from_sheet()
 
 if df_files.empty:
-    st.info("ℹ️ لم يتم العثور على سجلات في جوجل شيت حتى الآن، أو يتم تحميل الجدول.")
+    st.info("ℹ️ لم يتم العثور على سجلات حتى الآن.")
 else:
     header_cols = st.columns([0.4, 2.3, 0.8, 0.9, 1.8, 1.1, 1.1, 1.1])
     header_cols[0].markdown("No")
@@ -233,7 +228,6 @@ else:
         row_cols[3].markdown(f"{row['size']}")
         row_cols[4].markdown(f"{row['note']}")
         
-        # 1. زرار الفتح
         with row_cols[5]:
             path_val = str(row['path'])
             if os.path.exists(path_val):
@@ -260,7 +254,6 @@ else:
             else:
                 st.markdown("<span style='color:gray;'>مرفوع</span>", unsafe_allow_html=True)
 
-        # 2. زرار التحميل
         with row_cols[6]:
             path_val = str(row['path'])
             if os.path.exists(path_val):
@@ -275,11 +268,10 @@ else:
             else:
                 st.write("-")
 
-        # 3. زرار الحذف
         with row_cols[7]:
             if st.button("🗑️ Delete", key=f"delete_btn_{idx}", use_container_width=True):
                 delete_row_from_sheet(idx)
-                st.success(f"تم حذف الملف بنجاح!")
+                st.success("تم حذف الملف بنجاح!")
                 st.rerun()
             
         st.markdown("---")
