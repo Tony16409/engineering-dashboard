@@ -3,49 +3,20 @@ import pandas as pd
 from datetime import datetime
 import os
 import base64
-import gspread
-from google.oauth2.service_account import Credentials
 
 # --- إعدادات الصفحة ---
 st.set_page_config(page_title="Al-Farida Company Management 📐", page_icon="🏗️", layout="wide")
 
-# --- إعدادات Google Sheets وسيرفر الملفات ---
+# --- إعدادات قاعدة البيانات المحلية المتزامنة ---
 UPLOAD_DIR = "uploaded_files"
+DB_FILE = "files_db.csv"
+
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
-# رابط الشيت السحابي الخاص بك
-SHEET_URL = "https://docs.google.com/spreadsheets/d/1kG0V8iqNv4nCVDSYA-nRL_K5UCYpTbLGa5vh4Ip8ug0/edit?usp=sharing"
-
-def load_data_from_sheet():
-    try:
-        gc = gspread.oauth()
-        sh = gc.open_by_url(SHEET_URL)
-        worksheet = sh.get_worksheet(0)
-        data = worksheet.get_all_records()
-        df = pd.DataFrame(data)
-        if df.empty or not all(col in df.columns for col in ["name", "type", "size", "note", "date", "path"]):
-            return pd.DataFrame(columns=["name", "type", "size", "note", "date", "path"])
-        return df
-    except Exception as e:
-        return pd.DataFrame(columns=["name", "type", "size", "note", "date", "path"])
-
-def save_row_to_sheet(row_dict):
-    try:
-        gc = gspread.oauth()
-        sh = gc.open_by_url(SHEET_URL)
-        worksheet = sh.get_worksheet(0)
-        worksheet.append_row([
-            row_dict["name"],
-            row_dict["type"],
-            row_dict["size"],
-            row_dict["note"],
-            row_dict["date"],
-            row_dict["path"]
-        ])
-        return True
-    except Exception as e:
-        return False
+if not os.path.exists(DB_FILE):
+    df_init = pd.DataFrame(columns=["name", "type", "size", "note", "date", "path"])
+    df_init.to_csv(DB_FILE, index=False)
 
 # --- كود CSS لتنسيق الواجهة وخلفية هندسية احترافية ---
 st.markdown("""
@@ -148,34 +119,33 @@ if st.button("💾 Upload File & Save", type="primary"):
         file_size_str = f"{file_size_kb / 1024:.1f} MB" if file_size_kb > 1024 else f"{file_size_kb:.1f} KB"
         file_ext = uploaded_file.name.split('.')[-1].upper()
         
-        row_data = {
+        df = pd.read_csv(DB_FILE)
+        new_row = pd.DataFrame([{
             "name": uploaded_file.name,
             "type": file_ext,
             "size": file_size_str,
             "note": note if note else "No notes",
             "date": datetime.now().strftime("%Y-%m-%d"),
             "path": file_path
-        }
+        }])
         
-        success = save_row_to_sheet(row_data)
+        df = pd.concat([new_row, df], ignore_index=True)
+        df.to_csv(DB_FILE, index=False)
         
-        if success:
-            st.success(f"✅ تم حفظ الملف وربطه بالسحابة (Google Sheets) بنجاح: {uploaded_file.name}")
-        else:
-            st.warning("⚠️ تم حفظ الملف محلياً، ولكن حدث خطأ في الاتصال بجوجل شيت السحابي.")
+        st.success(f"✅ تم حفظ الملف ورفع المقاسات بنجاح: {uploaded_file.name}")
         st.rerun()
     else:
         st.warning("⚠️ يرجى اختيار ملف أولاً.")
 
 st.markdown("---")
 
-# --- سجل الملفات والمقاييس (جلب البيانات من Google Sheets) ---
-st.subheader("📋 Uploaded Files & Quantities Record (Cloud Synced)")
+# --- سجل الملفات والمقاييس ---
+st.subheader("📋 Uploaded Files & Quantities Record")
 
-df_files = load_data_from_sheet()
+df_files = pd.read_csv(DB_FILE)
 
 if df_files.empty:
-    st.info("ℹ️ لم يتم العثور على سجلات في جوجل شيت حتى الآن، أو يتم تحميل الجدول...")
+    st.info("ℹ️ لم يتم رفع أي ملفات حتى الآن. قم برفع ملف أعلاه.")
 else:
     header_cols = st.columns([0.4, 2.3, 0.8, 0.9, 1.8, 1.1, 1.1, 1.1])
     header_cols[0].markdown("No")
@@ -197,6 +167,7 @@ else:
         row_cols[3].markdown(f"{row['size']}")
         row_cols[4].markdown(f"{row['note']}")
         
+        # 1. زرار الفتح
         with row_cols[5]:
             if os.path.exists(str(row['path'])):
                 with open(row['path'], "rb") as f:
@@ -222,6 +193,7 @@ else:
             else:
                 st.error("مفقود")
 
+        # 2. زرار التحميل
         with row_cols[6]:
             if os.path.exists(str(row['path'])):
                 with open(row['path'], "rb") as file_to_download:
@@ -235,6 +207,7 @@ else:
             else:
                 st.error("مفقود")
 
+        # 3. زرار الحذف
         with row_cols[7]:
             if st.button("🗑️ Delete", key=f"delete_btn_{idx}", use_container_width=True):
                 if os.path.exists(str(row['path'])):
@@ -243,15 +216,9 @@ else:
                     except Exception:
                         pass
                 
-                try:
-                    gc = gspread.oauth()
-                    sh = gc.open_by_url(SHEET_URL)
-                    worksheet = sh.get_worksheet(0)
-                    worksheet.delete_rows(idx + 2)
-                    st.success(f"تم حذف الملف {row['name']} من السحابة بنجاح!")
-                except Exception as e:
-                    st.error("حدث خطأ أثناء الحذف من جوجل شيت.")
-                
+                df_files = df_files.drop(idx)
+                df_files.to_csv(DB_FILE, index=False)
+                st.success(f"تم حذف الملف {row['name']} بنجاح!")
                 st.rerun()
             
         st.markdown("---")
