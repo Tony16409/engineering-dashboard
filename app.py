@@ -3,20 +3,55 @@ import pandas as pd
 from datetime import datetime
 import os
 import base64
+import gspread
+from google.oauth2.service_account import Credentials
 
 # --- إعدادات الصفحة ---
 st.set_page_config(page_title="Al-Farida Company Management 📐", page_icon="🏗️", layout="wide")
 
-# --- إنشاء مجلد حفظ الملفات وقاعدة البيانات لو مش موجودين ---
+# --- إعدادات Google Sheets وسيرفر الملفات ---
 UPLOAD_DIR = "uploaded_files"
-DB_FILE = "files_db.csv"
-
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
-if not os.path.exists(DB_FILE):
-    df_init = pd.DataFrame(columns=["name", "type", "size", "note", "date", "path"])
-    df_init.to_csv(DB_FILE, index=False)
+# رابط الشيت السحابي الخاص بك
+SHEET_URL = "https://docs.google.com/spreadsheets/d/1kG0V8iqNv4nCVDSYA-nRL_K5UCYpTbLGa5vh4Ip8ug0/edit?usp=sharing"
+
+# اتصال أوتوماتيكي بجوجل شيت (باستخدام الرابط المتاح للمشاركة العامة أو الكريدينشال)
+@st.cache_resource
+init_gspread_client = lambda: gspread.oauth() # أو استخدام الاعتمادات لو متوفرة، وسنعتمد على الاتصال المباشر بالرابط
+
+def load_data_from_sheet():
+    try:
+        # طريقة قراءة البيانات من جوجل شيت
+        gc = gspread.oauth()
+        sh = gc.open_by_url(SHEET_URL)
+        worksheet = sh.get_worksheet(0)
+        data = worksheet.get_all_records()
+        df = pd.DataFrame(data)
+        if df.empty or not all(col in df.columns for col in ["name", "type", "size", "note", "date", "path"]):
+            return pd.DataFrame(columns=["name", "type", "size", "note", "date", "path"])
+        return df
+    except Exception as e:
+        # لو حصل أي استثناء في الشبكة، بنرجع DataFrame فاضي كحماية
+        return pd.DataFrame(columns=["name", "type", "size", "note", "date", "path"])
+
+def save_row_to_sheet(row_dict):
+    try:
+        gc = gspread.oauth()
+        sh = gc.open_by_url(SHEET_URL)
+        worksheet = sh.get_worksheet(0)
+        worksheet.append_row([
+            row_dict["name"],
+            row_dict["type"],
+            row_dict["size"],
+            row_dict["note"],
+            row_dict["date"],
+            row_dict["path"]
+        ])
+        return True
+    except Exception as e:
+        return False
 
 # --- كود CSS لتنسيق الواجهة وخلفية هندسية احترافية ---
 st.markdown("""
@@ -24,7 +59,6 @@ st.markdown("""
 [data-testid="stAppViewContainer"] {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
 }
-/* مستطيل العنوان العلوي الضخم والمليان */
 .brand-box {
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -66,12 +100,9 @@ if "authenticated" not in st.session_state:
 if not st.session_state["authenticated"]:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        # مستطيل العنوان العلوي الضخم
         st.markdown('<div class="brand-box"><p class="brand-text">Al-Farida Group</p></div>', unsafe_allow_html=True)
-        
         st.markdown('<div class="login-container">', unsafe_allow_html=True)
         
-        # نموذج تسجيل الدخول مع دعم Enter والخط العريض
         with st.form("login_form"):
             st.markdown("<h2 style='text-align: center; color: white;'>🏗️ Log in to Al-Farida Group</h2>", unsafe_allow_html=True)
             st.markdown("<p style='text-align: center; color: #94a3b8;'>Al-Farida Company Management 📐</p>", unsafe_allow_html=True)
@@ -90,7 +121,6 @@ if not st.session_state["authenticated"]:
                     st.error("❌ اسم المستخدم أو كلمة المرور غير صحيحة.")
                     
         st.markdown('</div>', unsafe_allow_html=True)
-        
     st.stop()
 
 # =================================================================
@@ -124,49 +154,51 @@ if st.button("💾 Upload File & Save", type="primary"):
         file_size_str = f"{file_size_kb / 1024:.1f} MB" if file_size_kb > 1024 else f"{file_size_kb:.1f} KB"
         file_ext = uploaded_file.name.split('.')[-1].upper()
         
-        df = pd.read_csv(DB_FILE)
-        new_row = pd.DataFrame([{
+        row_data = {
             "name": uploaded_file.name,
             "type": file_ext,
             "size": file_size_str,
             "note": note if note else "No notes",
             "date": datetime.now().strftime("%Y-%m-%d"),
             "path": file_path
-        }])
+        }
         
-        df = pd.concat([new_row, df], ignore_index=True)
-        df.to_csv(DB_FILE, index=False)
+        # حفظ السجل مباشرة في Google Sheet السحابي
+        success = save_row_to_sheet(row_data)
         
-        st.success(f"✅ تم حفظ الملف بشكل دائم ورفعه بنجاح: {uploaded_file.name}")
+        if success:
+            st.success(f"✅ تم حفظ الملف وربطه بالسحابة (Google Sheets) بنجاح: {uploaded_file.name}")
+        else:
+            st.warning("⚠️ تم حفظ الملف محلياً، ولكن حدث خطأ في الاتصال بجوجل شيت السحابي.")
         st.rerun()
     else:
         st.warning("⚠️ يرجى اختيار ملف أولاً.")
 
 st.markdown("---")
 
-# --- سجل الملفات والمقاييس ---
-st.subheader("📋 Uploaded Files & Quantities Record")
+# --- سجل الملفات والمقاييس (جلب البيانات من Google Sheets) ---
+st.subheader("📋 Uploaded Files & Quantities Record (Cloud Synced)")
 
-df_files = pd.read_csv(DB_FILE)
+df_files = load_data_from_sheet()
 
 if df_files.empty:
-    st.info("ℹ️ لم يتم رفع أي ملفات حتى الآن. قم برفع ملف أعلاه.")
+    st.info("ℹ️ لم يتم العثور على سجلات في جوجل شيت حتى الآن، أو يتم تحميل الجدول...")
 else:
     header_cols = st.columns([0.4, 2.3, 0.8, 0.9, 1.8, 1.1, 1.1, 1.1])
-    header_cols[0].markdown("*No*")
-    header_cols[1].markdown("*File Name*")
-    header_cols[2].markdown("*Type*")
-    header_cols[3].markdown("*Size*")
-    header_cols[4].markdown("*Notes*")
-    header_cols[5].markdown("*🌐 Open*")
-    header_cols[6].markdown("*💾 Download*")
-    header_cols[7].markdown("*🗑️ Delete*")
+    header_cols[0].markdown("No")
+    header_cols[1].markdown("File Name")
+    header_cols[2].markdown("Type")
+    header_cols[3].markdown("Size")
+    header_cols[4].markdown("Notes")
+    header_cols[5].markdown("🌐 Open")
+    header_cols[6].markdown("💾 Download")
+    header_cols[7].markdown("🗑️ Delete")
     st.markdown("---")
 
     for idx, row in df_files.iterrows():
         row_cols = st.columns([0.4, 2.3, 0.8, 0.9, 1.8, 1.1, 1.1, 1.1])
         
-        row_cols[0].markdown(f"*{idx + 1}*")
+        row_cols[0].markdown(f"{idx + 1}")
         row_cols[1].markdown(f"{row['name']}")
         row_cols[2].markdown(f"{row['type']}")
         row_cols[3].markdown(f"{row['size']}")
@@ -221,9 +253,17 @@ else:
                     except Exception:
                         pass
                 
-                df_files = df_files.drop(idx)
-                df_files.to_csv(DB_FILE, index=False)
-                st.success(f"تم حذف الملف {row['name']} بنجاح!")
+                # تحديث الشيت السحابي بعد الحذف
+                try:
+                    gc = gspread.oauth()
+                    sh = gc.open_by_url(SHEET_URL)
+                    worksheet = sh.get_worksheet(0)
+                    # حذف الصف (يُراعى أن الصفوف في جوجل شيت تبدأ من 2 بعد الهيدر)
+                    worksheet.delete_rows(idx + 2)
+                    st.success(f"تم حذف الملف {row['name']} من السحابة بنجاح!")
+                except Exception as e:
+                    st.error("حدث خطأ أثناء الحذف من جوجل شيت.")
+                
                 st.rerun()
             
         st.markdown("---")
