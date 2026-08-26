@@ -17,13 +17,8 @@ if not os.path.exists(UPLOAD_DIR):
 # رابط الشيت السحابي الخاص بك
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1kG0V8iqNv4nCVDSYA-nRL_K5UCYpTbLGa5vh4Ip8ug0/edit?usp=sharing"
 
-# اتصال أوتوماتيكي بجوجل شيت (باستخدام الرابط المتاح للمشاركة العامة أو الكريدينشال)
-@st.cache_resource
-init_gspread_client = lambda: gspread.oauth() # أو استخدام الاعتمادات لو متوفرة، وسنعتمد على الاتصال المباشر بالرابط
-
 def load_data_from_sheet():
     try:
-        # طريقة قراءة البيانات من جوجل شيت
         gc = gspread.oauth()
         sh = gc.open_by_url(SHEET_URL)
         worksheet = sh.get_worksheet(0)
@@ -33,7 +28,6 @@ def load_data_from_sheet():
             return pd.DataFrame(columns=["name", "type", "size", "note", "date", "path"])
         return df
     except Exception as e:
-        # لو حصل أي استثناء في الشبكة، بنرجع DataFrame فاضي كحماية
         return pd.DataFrame(columns=["name", "type", "size", "note", "date", "path"])
 
 def save_row_to_sheet(row_dict):
@@ -163,7 +157,6 @@ if st.button("💾 Upload File & Save", type="primary"):
             "path": file_path
         }
         
-        # حفظ السجل مباشرة في Google Sheet السحابي
         success = save_row_to_sheet(row_data)
         
         if success:
@@ -204,7 +197,6 @@ else:
         row_cols[3].markdown(f"{row['size']}")
         row_cols[4].markdown(f"{row['note']}")
         
-        # 1. زرار الفتح
         with row_cols[5]:
             if os.path.exists(str(row['path'])):
                 with open(row['path'], "rb") as f:
@@ -230,7 +222,6 @@ else:
             else:
                 st.error("مفقود")
 
-        # 2. زرار التحميل
         with row_cols[6]:
             if os.path.exists(str(row['path'])):
                 with open(row['path'], "rb") as file_to_download:
@@ -244,7 +235,6 @@ else:
             else:
                 st.error("مفقود")
 
-        # 3. زرار الحذف
         with row_cols[7]:
             if st.button("🗑️ Delete", key=f"delete_btn_{idx}", use_container_width=True):
                 if os.path.exists(str(row['path'])):
@@ -253,12 +243,10 @@ else:
                     except Exception:
                         pass
                 
-                # تحديث الشيت السحابي بعد الحذف
                 try:
                     gc = gspread.oauth()
                     sh = gc.open_by_url(SHEET_URL)
                     worksheet = sh.get_worksheet(0)
-                    # حذف الصف (يُراعى أن الصفوف في جوجل شيت تبدأ من 2 بعد الهيدر)
                     worksheet.delete_rows(idx + 2)
                     st.success(f"تم حذف الملف {row['name']} من السحابة بنجاح!")
                 except Exception as e:
