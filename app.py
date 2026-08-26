@@ -1,280 +1,231 @@
-mport os
-from datetime import datetime
-import pandas as pd
 import streamlit as st
+import pandas as pd
+from datetime import datetime
+import os
+import base64
 
-# إعدادات صفحة المنصة
-st.set_page_config(
-    page_title="Al-Farida Company Management", page_icon="🏗️", layout="wide"
-)
+# --- إعدادات الصفحة ---
+st.set_page_config(page_title="Al-Farida Company Management 📐", page_icon="🏗️", layout="wide")
 
-# إنشاء مجلد حفظ الملفات إذا لم يكن موجوداً
+# --- إنشاء مجلد حفظ الملفات وقاعدة البيانات لو مش موجودين ---
 UPLOAD_DIR = "uploaded_files"
-if not os.path.exists(UPLOAD_DIR):
-  os.makedirs(UPLOAD_DIR)
-
-# ملف قاعدة البيانات الوهمية (CSV) لتخزين سجل الملفات
 DB_FILE = "files_db.csv"
+
+if not os.path.exists(UPLOAD_DIR):
+    os.makedirs(UPLOAD_DIR)
+
 if not os.path.exists(DB_FILE):
-  df_init = pd.DataFrame(
-      columns=["name", "type", "size", "note", "date", "path"]
-  )
-  df_init.to_csv(DB_FILE, index=False)
+    df_init = pd.DataFrame(columns=["name", "type", "size", "note", "date", "path"])
+    df_init.to_csv(DB_FILE, index=False)
 
-# تهيئة متغير الـ uploader key لتصفير خانة الرفع أوتوماتيكياً
-if "uploader_key" not in st.session_state:
-  st.session_state["uploader_key"] = 0
+# --- كود CSS لتنسيق الواجهة وخلفية هندسية احترافية ---
+st.markdown("""
+<style>
+[data-testid="stAppViewContainer"] {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+}
+/* مستطيل العنوان العلوي الضخم والمليان */
+.brand-box {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding: 22px 20px;
+    border-radius: 18px;
+    max-width: 550px;
+    margin: 25px auto 15px auto;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+.brand-text {
+    color: #ffffff;
+    font-size: 38px !important;
+    font-weight: 900;
+    letter-spacing: 1px;
+    margin: 0;
+    line-height: 1.1;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    text-shadow: 0 3px 15px rgba(255, 255, 255, 0.3);
+}
+.login-container {
+    max-width: 550px;
+    margin: 0 auto;
+    color: white;
+}
+.login-container label {
+    color: white !important;
+}
+</style>
+""", unsafe_allow_html=True)
 
-# حالة تسجيل الدخول
+# --- إدارة حالة تسجيل الدخول ---
 if "authenticated" not in st.session_state:
-  st.session_state["authenticated"] = False
+    st.session_state["authenticated"] = False
 
-# ------------------------- واجهة تسجيل الدخول -------------------------
+# --- شاشة تسجيل الدخول ---
 if not st.session_state["authenticated"]:
-  # تصميم الـ CSS لصفحة الدخول
-  st.markdown(
-      """
-        <style>
-        [data-testid="stAppViewContainer"] {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-        }
-        .login-box {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            padding: 30px 25px;
-            border-radius: 18px;
-            max-width: 450px;
-            margin: 80px auto;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        }
-        </style>
-    """,
-      unsafe_allow_html=True,
-  )
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        # مستطيل العنوان العلوي الضخم
+        st.markdown('<div class="brand-box"><p class="brand-text">Al-Farida Group</p></div>', unsafe_allow_html=True)
+        
+        st.markdown('<div class="login-container">', unsafe_allow_html=True)
+        
+        # نموذج تسجيل الدخول مع دعم Enter والخط العريض
+        with st.form("login_form"):
+            st.markdown("<h2 style='text-align: center; color: white;'>🏗️ Log in to Al-Farida Group</h2>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center; color: #94a3b8;'>Al-Farida Company Management 📐</p>", unsafe_allow_html=True)
+            
+            username = st.text_input("👤 Username", key="login_user")
+            password = st.text_input("🔑 password", type="password", key="login_pass")
+            
+            st.write("")
+            submit_button = st.form_submit_button("🚪 Log in", use_container_width=True)
+            
+            if submit_button:
+                if username == "admin" and password == "1234":
+                    st.session_state["authenticated"] = True
+                    st.rerun()
+                else:
+                    st.error("❌ اسم المستخدم أو كلمة المرور غير صحيحة.")
+                    
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+    st.stop()
 
-  st.markdown("<div class='login-box'>", unsafe_allow_html=True)
+# =================================================================
+# --- لوحة التحكم الرئيسية ---
+# =================================================================
 
-  with st.form("login_form"):
-    st.markdown(
-        "<h2 style='text-align: center; color: white;'>🏗️ Welcome Back</h2>",
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        "<p style='text-align: center; color: #94a3b8;'>Engineering"
-        " Projects Management Platform</p>",
-        unsafe_allow_html=True,
-    )
+st.markdown('<h1 style="text-align: center; color: #333; background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">📂 Welcome to our company Al-Farida 📂</h1>', unsafe_allow_html=True)
+st.markdown("---")
 
-    username = st.text_input("👤 Username", key="login_user")
-    password = st.text_input("🔑 Password", type="password", key="login_pass")
+if st.sidebar.button("🔒 Log out"):
+    st.session_state["authenticated"] = False
+    st.rerun()
 
-    st.write("")
-    submit_button = st.form_submit_button(
-        "🚪 Login to Platform", use_container_width=True
-    )
+# --- قسم رفع الملفات ---
+st.subheader("📤 Upload a new document or plan")
+col1, col2 = st.columns([3, 2])
 
-    if submit_button:
-      if username == "admin" and password == "1234":
-        st.session_state["authenticated"] = True
-        st.rerun()
-      else:
-        st.error("❌ Invalid Username or Password.")
+with col1:
+    uploaded_file = st.file_uploader("Select the file (Excel, Word, PDF, CAD، أو مستند نصي)", type=["xlsx", "docx", "pdf", "txt", "csv", "dwg", "dxf", "jpg", "png"])
 
-  st.markdown("</div>", unsafe_allow_html=True)
+with col2:
+    note = st.text_input("📝 Notes on the file", key="file_note")
 
-else:
-  # ------------------------- لوحة التحكم الرئيسية للمنصة -------------------------
-  st.markdown(
-      """
-        <style>
-        [data-testid="stAppViewContainer"] {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-        }
-        .brand-box {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            padding: 22px 20px;
-            border-radius: 18px;
-            max-width: 550px;
-            margin: 25px auto 15px auto;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        }
-        .brand-text {
-            color: #ffffff;
-            font-size: 38px !important;
-            font-weight: 900;
-            letter-spacing: 1px;
-            margin: 0;
-            line-height: 1.1;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            text-shadow: 0 3px 15px rgba(255, 255, 255, 0.3);
-        }
-        </style>
-    """,
-      unsafe_allow_html=True,
-  )
-
-  # الهيدر الاحترافي للشركة
-  st.markdown(
-      """
-        <div class="brand-box">
-            <h1 class="brand-text">📂 Welcome to our company Al-Farida 📁</h1>
-        </div>
-    """,
-      unsafe_allow_html=True,
-  )
-
-  # زر تسجيل الخروج في الجانب
-  col_logout1, col_logout2 = st.columns([8, 1])
-  with col_logout2:
-    if st.button("🚪 Logout"):
-      st.session_state["authenticated"] = False
-      st.rerun()
-
-  st.write("---")
-
-  # قسم رفع الملفات
-  st.markdown(
-      "### 📤 Upload New File (Excel, Word, PDF, CAD, Images)"
-  )
-
-  col1, col2 = st.columns([2, 1])
-  with col1:
-    # استخدام الـ dynamic key لتصفير الخانة أوتوماتيكياً بعد الحفظ
-    uploaded_file = st.file_uploader(
-        "Choose a file",
-        type=[
-            "xlsx",
-            "docx",
-            "pdf",
-            "txt",
-            "csv",
-            "dwg",
-            "dxf",
-            "jpg",
-            "png",
-        ],
-        key=f"file_uploader_{st.session_state['uploader_key']}",
-        label_visibility="collapsed",
-    )
-
-  with col2:
-    note = st.text_input("📝 Notes on file (Optional)", key="file_note")
-
-  st.write("")
-  if st.button("📤 Upload File & Save", type="primary"):
+if st.button("💾 Upload File & Save", type="primary"):
     if uploaded_file is not None:
-      # حفظ الملف في المجلد
-      file_path = os.path.join(UPLOAD_DIR, uploaded_file.name)
-      with open(file_path, "wb") as f:
-        f.write(uploaded_file.getbuffer())
-
-      # حساب حجم الملف وتنسيقه
-      file_size_kb = uploaded_file.size / 1024
-      file_size_str = (
-          f"{file_size_kb / 1024:.1f} MB"
-          if file_size_kb > 1024
-          else f"{file_size_kb:.1f} KB"
-      )
-      file_ext = uploaded_file.name.split(".")[-1].upper()
-
-      # قراءة قاعدة البيانات وتحديثها
-      df = pd.read_csv(DB_FILE)
-      new_row = pd.DataFrame([{
-          "name": uploaded_file.name,
-          "type": file_ext,
-          "size": file_size_str,
-          "note": note if note else "No notes",
-          "date": datetime.now().strftime("%Y-%m-%d"),
-          "path": file_path,
-      }])
-
-      df = pd.concat([new_row, df], ignore_index=True)
-      df.to_csv(DB_FILE, index=False)
-
-      # تصفير خانة الرفع أوتوماتيكياً دون الحاجة لضغط علامة الـ X أو إعادة تحميل ظاهرة
-      st.session_state["uploader_key"] += 1
-      st.success("✅ File uploaded and saved successfully!")
-      st.rerun()
+        file_path = os.path.join(UPLOAD_DIR, uploaded_file.name)
+        with open(file_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+            
+        file_size_kb = uploaded_file.size / 1024
+        file_size_str = f"{file_size_kb / 1024:.1f} MB" if file_size_kb > 1024 else f"{file_size_kb:.1f} KB"
+        file_ext = uploaded_file.name.split('.')[-1].upper()
+        
+        df = pd.read_csv(DB_FILE)
+        new_row = pd.DataFrame([{
+            "name": uploaded_file.name,
+            "type": file_ext,
+            "size": file_size_str,
+            "note": note if note else "No notes",
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "path": file_path
+        }])
+        
+        df = pd.concat([new_row, df], ignore_index=True)
+        df.to_csv(DB_FILE, index=False)
+        
+        st.success(f"✅ تم حفظ الملف بشكل دائم ورفعه بنجاح: {uploaded_file.name}")
+        st.rerun()
     else:
-      st.warning("⚠️ Please select a file to upload first.")
+        st.warning("⚠️ يرجى اختيار ملف أولاً.")
 
-  st.write("---")
+st.markdown("---")
 
-  # ------------------------- جدول عرض الملفات المحفوظة -------------------------
-  st.markdown("### 🗂️ Uploaded Files & Quantities Record")
+# --- سجل الملفات والمقاييس ---
+st.subheader("📋 Uploaded Files & Quantities Record")
 
-  df_records = pd.read_csv(DB_FILE)
+df_files = pd.read_csv(DB_FILE)
 
-  if df_records.empty:
-    st.info("ℹ️ No files uploaded yet.")
-  else:
-    # رأس جدول الأعمدة بالإنجليزية
-    header_cols = st.columns([0.5, 3, 1, 1, 2.5, 1, 1, 1])
-    headers = ["#", "File Name", "Type", "Size", "Notes", "Open", "Download", "Delete"]
-    for col, h in zip(header_cols, headers):
-      col.markdown(f"*{h}*")
-
+if df_files.empty:
+    st.info("ℹ️ لم يتم رفع أي ملفات حتى الآن. قم برفع ملف أعلاه.")
+else:
+    header_cols = st.columns([0.4, 2.3, 0.8, 0.9, 1.8, 1.1, 1.1, 1.1])
+    header_cols[0].markdown("*No*")
+    header_cols[1].markdown("*File Name*")
+    header_cols[2].markdown("*Type*")
+    header_cols[3].markdown("*Size*")
+    header_cols[4].markdown("*Notes*")
+    header_cols[5].markdown("*🌐 Open*")
+    header_cols[6].markdown("*💾 Download*")
+    header_cols[7].markdown("*🗑️ Delete*")
     st.markdown("---")
 
-    # عرض الصفوف ديناميكياً مع أدوات التحكم
-    for idx, row in df_records.iterrows():
-      r_cols = st.columns([0.5, 3, 1, 1, 2.5, 1, 1, 1])
+    for idx, row in df_files.iterrows():
+        row_cols = st.columns([0.4, 2.3, 0.8, 0.9, 1.8, 1.1, 1.1, 1.1])
+        
+        row_cols[0].markdown(f"*{idx + 1}*")
+        row_cols[1].markdown(f"{row['name']}")
+        row_cols[2].markdown(f"{row['type']}")
+        row_cols[3].markdown(f"{row['size']}")
+        row_cols[4].markdown(f"{row['note']}")
+        
+        # 1. زرار الفتح
+        with row_cols[5]:
+            if os.path.exists(str(row['path'])):
+                with open(row['path'], "rb") as f:
+                    file_bytes = f.read()
+                b64_data = base64.b64encode(file_bytes).decode('utf-8')
+                mime_type = "application/pdf" if row['type'] == "PDF" else "application/octet-stream"
+                
+                open_link = f'''
+                <a href="data:{mime_type};base64,{b64_data}" target="_blank" style="
+                    display: inline-block;
+                    background-color: #ff4b4b;
+                    color: white;
+                    padding: 5px 8px;
+                    border-radius: 4px;
+                    text-decoration: none;
+                    text-align: center;
+                    font-size: 13px;
+                    font-weight: 500;
+                    width: 100%;
+                ">Open</a>
+                '''
+                st.markdown(open_link, unsafe_allow_html=True)
+            else:
+                st.error("مفقود")
 
-      r_cols[0].write(f"{idx + 1}")
-      r_cols[1].write(f"{row['name']}")
-      r_cols[2].write(f"{row['type']}")
-      r_cols[3].write(f"{row['size']}")
-      r_cols[4].write(f"{row['note']}")
+        # 2. زرار التحميل
+        with row_cols[6]:
+            if os.path.exists(str(row['path'])):
+                with open(row['path'], "rb") as file_to_download:
+                    st.download_button(
+                        label="Download",
+                        data=file_to_download,
+                        file_name=row['name'],
+                        key=f"download_btn_{idx}",
+                        use_container_width=True
+                    )
+            else:
+                st.error("مفقود")
 
-      # زرار فتح الملف
-      if os.path.exists(row["path"]):
-        with open(row["path"], "rb") as file_data:
-          r_cols[5].download_button(
-              "🌐 Open",
-              data=file_data,
-              file_name=row["name"],
-              mime="application/octet-stream",
-              key=f"open_{idx}",
-          )
-      else:
-        r_cols[5].write("Missing")
+        # 3. زرار الحذف
+        with row_cols[7]:
+            if st.button("🗑️ Delete", key=f"delete_btn_{idx}", use_container_width=True):
+                if os.path.exists(str(row['path'])):
+                    try:
+                        os.remove(row['path'])
+                    except Exception:
+                        pass
+                
+                df_files = df_files.drop(idx)
+                df_files.to_csv(DB_FILE, index=False)
+                st.success(f"تم حذف الملف {row['name']} بنجاح!")
+                st.rerun()
+            
+        st.markdown("---")
 
-      # زرار تحميل الملف
-      if os.path.exists(row["path"]):
-        with open(row["path"], "rb") as file_data:
-          r_cols[6].download_button(
-              "📥 Download",
-              data=file_data,
-              file_name=row["name"],
-              mime="application/octet-stream",
-              key=f"download_{idx}",
-          )
-      else:
-        r_cols[6].write("Missing")
-
-      # زرار حذف الملف من الجدول والمجلد
-      if r_cols[7].button("🗑️ Delete", key=f"del_{idx}"):
-        if os.path.exists(row["path"]):
-          try:
-            os.remove(row["path"])
-          except:
-            pass
-        df_records = df_records.drop(idx)
-        df_records.to_csv(DB_FILE, index=False)
-        st.rerun()
-
-  # الفوتر الهندسي للمنصة
-  st.markdown("---")
-  st.markdown(
-      "<p style='text-align: center; color: #64748b; font-size: 14px;'>Engineering"
-      " Projects Management Platform - Designed & Developed by Antonious"
-      f" Adel © {datetime.now().year}</p>",
-      unsafe_allow_html=True,
-  )
+st.markdown('<p style="text-align: center; color: #777;">منصة إدارة شركة الفريدة - تصميم وتنفيذ مهندس أنطونيوس عادل © 2026</p>', unsafe_allow_html=True)
