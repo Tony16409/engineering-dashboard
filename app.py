@@ -30,8 +30,8 @@ def get_sheet():
             client = gspread.authorize(creds)
             sheet = client.open_by_url(SHEET_URL).worksheet("Sheet1")
             return sheet
-    except Exception:
-        pass
+    except Exception as e:
+    st.error(f"خطأ في الاتصال: {e}")
     return None
 
 def load_data_from_sheet():
