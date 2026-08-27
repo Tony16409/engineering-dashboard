@@ -1,8 +1,18 @@
 {
   "short_name": "Al-Farida",
   "name": "Al-Farida Group",
+  "icons": [
+    {
+      "src": "favicon_512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
   "start_url": "/",
   "display": "standalone",
   "theme_color": "#ffffff",
-  "background_color": "#ffffff"
+  "background_color": "#ffffff",
+  "id": "al-farida-app",
+  "description": "Al-Farida Group Engineering Dashboard",
+  "orientation": "portrait"
 }
