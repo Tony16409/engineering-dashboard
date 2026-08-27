@@ -1,20 +1,24 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
+import os
+import base64
 import gspread
 from google.oauth2.service_account import Credentials
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseUpload
-import io
 
 # --- إعدادات الصفحة ---
 st.set_page_config(page_title="Al-Farida Company Management 📐", page_icon="🏗️", layout="wide")
 
-# --- إعداد الاتصال بجوجل شيت وجوجل درايف أوتوماتيكياً ---
+# --- إعدادات فولدر الملفات المحلي ---
+UPLOAD_DIR = "uploaded_files"
+if not os.path.exists(UPLOAD_DIR):
+    os.makedirs(UPLOAD_DIR)
+
+# --- إعداد الاتصال بجوجل شيت أوتوماتيكياً ---
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1kG0V8iqNv4nCVDSYA-nRL_K5UCYpTbLGa5vh4Ip8ug0/edit?usp=sharing"
 
 @st.cache_resource
-def get_gcp_clients():
+def get_sheet():
     try:
         if "gcp_service_account" in st.secrets:
             creds_dict = dict(st.secrets["gcp_service_account"])
@@ -23,48 +27,15 @@ def get_gcp_clients():
                 "https://www.googleapis.com/auth/drive"
             ]
             creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-            
-            # عميل جوجل شيت
-            gc = gspread.authorize(creds)
-            sheet = gc.open_by_url(SHEET_URL).worksheet("Sheet1")
-            
-            # عميل جوجل درايف
-            drive_service = build('drive', 'v3', credentials=creds)
-            
-            return sheet, drive_service
+            client = gspread.authorize(creds)
+            sheet = client.open_by_url(SHEET_URL).worksheet("Sheet1")
+            return sheet
     except Exception as e:
-        st.error(f"خطأ في الاتصال بخدمات جوجل: {e}")
-        return None, None
-    return None, None
-
-def upload_to_drive(uploaded_file, drive_service):
-    try:
-        file_metadata = {'name': uploaded_file.name}
-        media = MediaIoBaseUpload(
-            io.BytesIO(uploaded_file.getbuffer()),
-            mimetype=uploaded_file.type,
-            resumable=True
-        )
-        file = drive_service.files().create(
-            body=file_metadata,
-            media_body=media,
-            fields='id, webViewLink, webContentLink'
-        ).execute()
-        
-        # منح صلاحية القراءة للجميع برابط مباشر
-        file_id = file.get('id')
-        drive_service.permissions().create(
-            fileId=file_id,
-            body={'role': 'reader', 'type': 'anyone'}
-        ).execute()
-        
-        return file.get('webViewLink'), file.get('webContentLink')
-    except Exception as e:
-        st.error(f"خطأ أثناء الرفع إلى جوجل درايف: {e}")
-        return None, None
+        st.error(f"خطأ في الاتصال: {e}")
+        return None
 
 def load_data_from_sheet():
-    sheet, _ = get_gcp_clients()
+    sheet = get_sheet()
     if sheet:
         try:
             data = sheet.get_all_records()
@@ -73,10 +44,12 @@ def load_data_from_sheet():
                 return df
         except Exception:
             pass
+    if os.path.exists("files_db.csv"):
+        return pd.read_csv("files_db.csv")
     return pd.DataFrame(columns=["name", "type", "size", "note", "date", "path"])
 
 def save_row_to_sheet(row_dict):
-    sheet, _ = get_gcp_clients()
+    sheet = get_sheet()
     if sheet:
         try:
             sheet.append_row([
@@ -87,16 +60,26 @@ def save_row_to_sheet(row_dict):
                 row_dict["date"],
                 row_dict["path"]
             ])
-        except Exception as e:
-            st.error(f"خطأ في حفظ البيانات في الشيت: {e}")
+        except Exception:
+            pass
+    
+    df = load_data_from_sheet()
+    new_df = pd.DataFrame([row_dict])
+    df = pd.concat([new_df, df], ignore_index=True)
+    df.to_csv("files_db.csv", index=False)
 
 def delete_row_from_sheet(index_to_delete):
-    sheet, _ = get_gcp_clients()
+    sheet = get_sheet()
     if sheet:
         try:
             sheet.delete_rows(index_to_delete + 2)
         except Exception:
             pass
+    
+    df = load_data_from_sheet()
+    if not df.empty and index_to_delete < len(df):
+        df = df.drop(index_to_delete).reset_index(drop=True)
+        df.to_csv("files_db.csv", index=False)
 
 # --- كود CSS لتنسيق الواجهة وخلفية هندسية احترافية ---
 st.markdown("""
@@ -180,7 +163,7 @@ if st.sidebar.button("🔒 Log out"):
     st.rerun()
 
 # --- قسم رفع الملفات ---
-st.subheader("📤 Upload a new document or plan (Google Drive Synced)")
+st.subheader("📤 Upload a new document or plan")
 col1, col2 = st.columns([3, 2])
 
 with col1:
@@ -189,41 +172,36 @@ with col1:
 with col2:
     note = st.text_input("📝 Notes on the file", key="file_note")
 
-if st.button("💾 Upload to Drive & Save", type="primary"):
+if st.button("💾 Upload File & Save", type="primary"):
     if uploaded_file is not None:
-        with st.spinner("جاري رفع الملف إلى Google Drive وحفظ البيانات..."):
-            _, drive_service = get_gcp_clients()
-            if drive_service:
-                view_link, download_link = upload_to_drive(uploaded_file, drive_service)
-                
-                if view_link:
-                    file_size_kb = uploaded_file.size / 1024
-                    file_size_str = f"{file_size_kb / 1024:.1f} MB" if file_size_kb > 1024 else f"{file_size_kb:.1f} KB"
-                    file_ext = uploaded_file.name.split('.')[-1].upper()
-                    
-                    row_data = {
-                        "name": uploaded_file.name,
-                        "type": file_ext,
-                        "size": file_size_str,
-                        "note": note if note else "No notes",
-                        "date": datetime.now().strftime("%Y-%m-%d"),
-                        "path": view_link
-                    }
-                    
-                    save_row_to_sheet(row_data)
-                    st.success(f"✅ تم رفع الملف إلى جوجل درايف وحفظه بنجاح: {uploaded_file.name}")
-                    st.rerun()
-                else:
-                    st.error("❌ فشل رفع الملف إلى جوجل درايف.")
-            else:
-                st.error("❌ تعذر الاتصال بخدمة Google Drive.")
+        file_path = os.path.join(UPLOAD_DIR, uploaded_file.name)
+        with open(file_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+            
+        file_size_kb = uploaded_file.size / 1024
+        file_size_str = f"{file_size_kb / 1024:.1f} MB" if file_size_kb > 1024 else f"{file_size_kb:.1f} KB"
+        file_ext = uploaded_file.name.split('.')[-1].upper()
+        
+        row_data = {
+            "name": uploaded_file.name,
+            "type": file_ext,
+            "size": file_size_str,
+            "note": note if note else "No notes",
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "path": file_path
+        }
+        
+        save_row_to_sheet(row_data)
+        
+        st.success(f"✅ تم حفظ الملف بنجاح: {uploaded_file.name}")
+        st.rerun()
     else:
         st.warning("⚠️ يرجى اختيار ملف أولاً.")
 
 st.markdown("---")
 
 # --- سجل الملفات والمقاييس ---
-st.subheader("📋 Uploaded Files & Quantities Record (Google Drive & Sheets Synced)")
+st.subheader("📋 Uploaded Files & Quantities Record (Google Sheets Synced)")
 
 df_files = load_data_from_sheet()
 
@@ -250,13 +228,16 @@ else:
         row_cols[3].markdown(f"{row['size']}")
         row_cols[4].markdown(f"{row['note']}")
         
-        link_val = str(row['path'])
-        
-        # زر Open السحابي
         with row_cols[5]:
-            if link_val and link_val.startswith("http"):
+            path_val = str(row['path'])
+            if os.path.exists(path_val):
+                with open(path_val, "rb") as f:
+                    file_bytes = f.read()
+                b64_data = base64.b64encode(file_bytes).decode('utf-8')
+                mime_type = "application/pdf" if row['type'] == "PDF" else "application/octet-stream"
+                
                 open_link = f'''
-                <a href="{link_val}" target="_blank" style="
+                <a href="data:{mime_type};base64,{b64_data}" target="_blank" style="
                     display: inline-block;
                     background-color: #ff4b4b;
                     color: white;
@@ -271,40 +252,26 @@ else:
                 '''
                 st.markdown(open_link, unsafe_allow_html=True)
             else:
-                st.markdown("<span style='color:gray;'>غير متاح</span>", unsafe_allow_html=True)
+                st.markdown("<span style='color:gray;'>مرفوع</span>", unsafe_allow_html=True)
 
-        # زر Download السحابي
         with row_cols[6]:
-            if link_val and link_val.startswith("http"):
-                try:
-                    file_id = link_val.split('/d/')[1].split('/')[0]
-                    download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
-                except:
-                    download_url = link_val
-                
-                dl_btn = f'''
-                <a href="{download_url}" target="_blank" style="
-                    display: inline-block;
-                    background-color: #2563eb;
-                    color: white;
-                    padding: 5px 8px;
-                    border-radius: 4px;
-                    text-decoration: none;
-                    text-align: center;
-                    font-size: 13px;
-                    font-weight: 500;
-                    width: 100%;
-                ">Download</a>
-                '''
-                st.markdown(dl_btn, unsafe_allow_html=True)
+            path_val = str(row['path'])
+            if os.path.exists(path_val):
+                with open(path_val, "rb") as file_to_download:
+                    st.download_button(
+                        label="Download",
+                        data=file_to_download,
+                        file_name=row['name'],
+                        key=f"download_btn_{idx}",
+                        use_container_width=True
+                    )
             else:
                 st.write("-")
 
-        # زر الحذف
         with row_cols[7]:
             if st.button("🗑️ Delete", key=f"delete_btn_{idx}", use_container_width=True):
                 delete_row_from_sheet(idx)
-                st.success("تم حذف السجل بنجاح!")
+                st.success("تم حذف الملف بنجاح!")
                 st.rerun()
             
         st.markdown("---")
