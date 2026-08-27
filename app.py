@@ -207,7 +207,7 @@ if st.button("💾 Upload to Drive & Save", type="primary"):
                         "size": file_size_str,
                         "note": note if note else "No notes",
                         "date": datetime.now().strftime("%Y-%m-%d"),
-                        "path": view_link # نحفظ رابط الدريف السحابي المباشر
+                        "path": view_link
                     }
                     
                     save_row_to_sheet(row_data)
@@ -276,15 +276,11 @@ else:
         # زر Download السحابي
         with row_cols[6]:
             if link_val and link_val.startswith("http"):
-                # تحويل رابط التصفح لرابط تحميل مباشر من جوجل درايف
-                download_url = link_val.replace("view?usp=drivesdk", "uc?export=download&id=").replace("file/d/", "uc?id=").split("/view")[0]
-                if "uc?export=download" not in download_url and "id=" in link_val:
-                    # استخراج الـ file_id لو الرابط بالشكل القياسي
-                    try:
-                        file_id = link_val.split('/d/')[1].split('/')[0]
-                        download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
-                    except:
-                        download_url = link_val
+                try:
+                    file_id = link_val.split('/d/')[1].split('/')[0]
+                    download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
+                except:
+                    download_url = link_val
                 
                 dl_btn = f'''
                 <a href="{download_url}" target="_blank" style="
